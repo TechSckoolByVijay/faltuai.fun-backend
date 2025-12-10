@@ -37,6 +37,24 @@ class Settings:
     # Database Configuration (for future use)
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
     
+    # OpenAI Configuration
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "dummy-openai-key")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+    
+    # LangSmith Configuration
+    LANGCHAIN_TRACING_V2: bool = os.getenv("LANGCHAIN_TRACING_V2", "True").lower() == "true"
+    LANGCHAIN_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "dummy-langsmith-key")
+    LANGCHAIN_PROJECT: str = os.getenv("LANGCHAIN_PROJECT", "faltuai-fun")
+    LANGCHAIN_ENDPOINT: str = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
+    
+    # Azure Document Intelligence Configuration
+    AZURE_DOC_INTELLIGENCE_ENDPOINT: str = os.getenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "dummy-endpoint")
+    AZURE_DOC_INTELLIGENCE_KEY: str = os.getenv("AZURE_DOC_INTELLIGENCE_KEY", "dummy-key")
+    
+    # File Upload Configuration
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_FILE_TYPES: list = ["application/pdf", "text/plain"]
+    
     # OAuth URLs
     GOOGLE_OAUTH_AUTHORIZE_URL: str = "https://accounts.google.com/o/oauth2/auth"
     GOOGLE_OAUTH_TOKEN_URL: str = "https://oauth2.googleapis.com/token"

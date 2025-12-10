@@ -1,33 +1,48 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 class UserBase(BaseModel):
     """
     Base user schema with common fields
     """
     email: EmailStr
-    name: Optional[str] = None
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class UserCreate(UserBase):
     """
     Schema for creating a new user
     """
-    pass
+    google_id: str
+
+class UserUpdate(BaseModel):
+    """
+    Schema for updating user information
+    """
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_premium: Optional[bool] = None
 
 class User(UserBase):
     """
     User schema for API responses
     """
+    id: int
+    google_id: str
     is_active: bool = True
+    is_premium: bool = False
+    created_at: datetime
+    last_login: Optional[datetime] = None
     
     class Config:
         from_attributes = True
 
 class UserInDB(User):
     """
-    User schema for database operations (if needed in future)
+    User schema for database operations (backward compatibility)
     """
-    hashed_password: Optional[str] = None
+    pass
 
 class Token(BaseModel):
     """

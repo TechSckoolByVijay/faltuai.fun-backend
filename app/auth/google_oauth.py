@@ -144,11 +144,16 @@ class GoogleOAuthHandler:
         # Get user information
         user_info = await self.get_user_info(access_token)
         
+        # Debug: Print raw user info from Google
+        print(f"🔍 Raw Google userinfo API response: {user_info}")
+        
         return {
             'email': user_info.get('email'),
             'name': user_info.get('name'),
             'picture': user_info.get('picture'),
             'verified_email': user_info.get('verified_email', False),
+            'id': user_info.get('id'),  # Add the Google user ID
+            'sub': user_info.get('sub'), # Add OpenID Connect subject
             'access_token': access_token,
             'token_type': token_response.get('token_type', 'Bearer')
         }
