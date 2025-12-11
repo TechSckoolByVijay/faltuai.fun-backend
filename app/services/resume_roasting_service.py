@@ -92,6 +92,16 @@ class ResumeRoastingService:
             "suggestions": ["Improve formatting", "Add achievements", "Be more specific"],
             "confidence_score": 7.0
         }
+    
+    def verify_langsmith_setup(self) -> Dict:
+        """Verify LangSmith configuration and return status"""
+        return {
+            "tracing_enabled": settings.LANGCHAIN_TRACING_V2,
+            "api_key_configured": bool(settings.LANGCHAIN_API_KEY and settings.LANGCHAIN_API_KEY != "dummy-langsmith-key"),
+            "project_name": settings.LANGCHAIN_PROJECT,
+            "endpoint": settings.LANGCHAIN_ENDPOINT,
+            "status": "configured" if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY != "dummy-langsmith-key" else "not_configured"
+        }
 
 # Create global service instance
 resume_roasting_service = ResumeRoastingService()
