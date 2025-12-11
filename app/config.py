@@ -70,8 +70,9 @@ class Settings:
     @property
     def google_oauth_redirect_uri(self) -> str:
         """Generate the OAuth redirect URI"""
-        # Use production Container App URL if available, otherwise localhost
-        if hasattr(self, '_is_production') or 'azurecontainerapps.io' in str(os.getenv('WEBSITE_HOSTNAME', '')):
+        # Check if we're in production environment
+        environment = os.getenv('ENVIRONMENT', 'development').lower()
+        if environment == 'production':
             return "https://faltuai.reddune-c0e74598.centralindia.azurecontainerapps.io/auth/google/callback"
         return "http://localhost:8000/auth/google/callback"
 
