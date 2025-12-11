@@ -83,7 +83,9 @@ app.include_router(resume_roast_router, prefix="/api/v1")
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
     from app.debug_router import debug_router
+    from app.migration_router import migration_router
     app.include_router(debug_router, prefix="/api/v1")
+    app.include_router(migration_router, prefix="/api/v1")
 
 # Root endpoint
 @app.get("/")
