@@ -95,17 +95,67 @@ jobs:
           resourceGroup: ${{ env.RESOURCE_GROUP }}
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           environmentVariables: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            ASYNC_DATABASE_URL=${{ secrets.ASYNC_DATABASE_URL }}
+            DATABASE_URL=${{ vars.DATABASE_URL }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            FRONTEND_URL=https://techsckoolbyvijay.github.io/faltuai.fun-frontend
             LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 }}
             LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }}
             LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT }}
+            LANGCHAIN_ENDPOINT=${{ secrets.LANGCHAIN_ENDPOINT }}
+            LANGSMITH_AUTO_BATCH_TRACING=${{ secrets.LANGSMITH_AUTO_BATCH_TRACING }}
+            AZURE_DOC_INTELLIGENCE_ENDPOINT=${{ secrets.AZURE_DOC_INTELLIGENCE_ENDPOINT }}
+            AZURE_DOC_INTELLIGENCE_KEY=${{ secrets.AZURE_DOC_INTELLIGENCE_KEY }}
+            DEBUG=false
+            ENVIRONMENT=production
+            LOG_LEVEL=INFO
           
+      - name: Verify deployment
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.30.0
+          inlineScript: |
+            echo "🔍 Verifying Container App deployment..."
+            
+            # Get app status
+            APP_STATUS=$(az containerapp show \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --query 'properties.provisioningState' \
+              --output tsv)
+            
+            # Get app URL
+            APP_URL=$(az containerapp show \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --query 'properties.configuration.ingress.fqdn' \
+              --output tsv)
+            
+            echo "📊 Deployment Status: $APP_STATUS"
+            echo "🔗 Application URL: https://$APP_URL"
+            
+            # Test health endpoint (with timeout)
+            echo "🏥 Testing health endpoint..."
+            if curl -f --max-time 30 "https://$APP_URL/health"; then
+              echo "✅ Health check passed"
+            else
+              echo "⚠️ Health check failed - app may still be starting"
+            fi
+            
+            # Show recent logs
+            echo "📋 Recent application logs:"
+            az containerapp logs show \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --follow false \
+              --tail 20 || echo "Could not retrieve logs"
+
       - name: Output deployment info
         run: |
           echo "### 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
@@ -113,3 +163,14 @@ jobs:
           echo "**Container App:** \`${{ env.CONTAINER_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Resource Group:** \`${{ env.RESOURCE_GROUP }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**🔗 Application URL:** https://faltuai.reddune-c0e74598.centralindia.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "**🏥 Health Check:** https://faltuai.reddune-c0e74598.centralindia.azurecontainerapps.io/health" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment Variables Configured:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Database (PostgreSQL)" >> $GITHUB_STEP_SUMMARY
+          echo "- Google OAuth" >> $GITHUB_STEP_SUMMARY
+          echo "- OpenAI API" >> $GITHUB_STEP_SUMMARY
+          echo "- LangChain/LangSmith" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure Document Intelligence" >> $GITHUB_STEP_SUMMARY
+          echo "- Production settings" >> $GITHUB_STEP_SUMMARY
