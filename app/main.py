@@ -111,29 +111,32 @@ async def health_check():
     }
 
 @app.get("/health/db")
-async def database_health_check(db: AsyncSession = Depends(get_db)):
+async def database_health_check():
     """
     Database health check endpoint
     """
     try:
-        # Try to execute a simple query
+        # Import here to avoid startup issues
+        from app.core.database import AsyncSessionLocal
         from sqlalchemy import text
-        result = await db.execute(text("SELECT 1"))
-        row = result.fetchone()
+        from datetime import datetime
         
-        if row and row[0] == 1:
-            from datetime import datetime
-            return {
-                "status": "healthy",
-                "database": "connected",
-                "timestamp": datetime.utcnow().isoformat() + "Z"
-            }
-        else:
-            return {
-                "status": "unhealthy",
-                "database": "query_failed",
-                "error": "Query did not return expected result"
-            }
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(text("SELECT 1"))
+            row = result.fetchone()
+            
+            if row and row[0] == 1:
+                return {
+                    "status": "healthy",
+                    "database": "connected",
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                }
+            else:
+                return {
+                    "status": "unhealthy", 
+                    "database": "query_failed",
+                    "error": "Query did not return expected result"
+                }
     except Exception as e:
         return {
             "status": "unhealthy",
