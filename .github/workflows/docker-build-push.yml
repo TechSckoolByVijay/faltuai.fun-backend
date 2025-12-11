@@ -110,8 +110,8 @@ jobs:
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.RESOURCE_GROUP }} \
               --replace-env-vars \
-                DATABASE_URL="postgresql://dbadmin:FaltuAIfun_p@55word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?ssl=require" \
-                ASYNC_DATABASE_URL="postgresql+asyncpg://dbadmin:FaltuAIfun_p@55word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?ssl=require" \
+                DATABASE_URL="postgresql://dbadmin:FaltuAIfun_p%4055word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?sslmode=require" \
+                ASYNC_DATABASE_URL="postgresql+asyncpg://dbadmin:FaltuAIfun_p%4055word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?ssl=require" \
                 POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
                 POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
                 POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
