@@ -93,7 +93,11 @@ jobs:
         with:
           azcliversion: 2.30.0
           inlineScript: |
-            echo "🚀 Updating Container App with new image and environment variables..."
+            echo "🚀 Installing Container Apps extension and updating app..."
+            
+            # Install Container Apps extension
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az extension add --name containerapp --upgrade
             
             # Update the container app with new image and all environment variables
             az containerapp update \
