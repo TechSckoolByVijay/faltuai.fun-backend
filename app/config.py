@@ -21,7 +21,7 @@ class Settings:
     
     # Application Configuration
     APP_NAME: str = "FaltuAI Fun Backend"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "1.0.1"  # Updated after database schema fix
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     
     # CORS Configuration
