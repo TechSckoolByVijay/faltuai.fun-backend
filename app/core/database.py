@@ -10,11 +10,16 @@ from typing import AsyncGenerator
 # Database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://faltuai_user:faltuai_password@localhost:5432/faltuai_db")
 
-# Convert to async URL if needed
+# Convert to async URL if needed and fix SSL parameters for asyncpg
 if DATABASE_URL.startswith("postgresql://"):
     ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    # Fix SSL parameter for asyncpg
+    ASYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace("sslmode=require", "ssl=require")
 else:
     ASYNC_DATABASE_URL = DATABASE_URL
+    # Fix SSL parameter for asyncpg if present
+    if "sslmode=require" in ASYNC_DATABASE_URL:
+        ASYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace("sslmode=require", "ssl=require")
 
 # SQLAlchemy async engine
 engine = create_async_engine(
