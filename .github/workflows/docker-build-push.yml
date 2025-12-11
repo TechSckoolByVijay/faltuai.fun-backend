@@ -11,6 +11,9 @@ on:
 env:
   REGISTRY: faltuaicr.azurecr.io
   IMAGE_NAME: faltuai-backend
+  CONTAINER_APP_NAME: faltuai-backend-app
+  RESOURCE_GROUP: faltuai-rg
+  CONTAINER_APP_ENVIRONMENT: faltuai-env
 
 jobs:
   build-and-push:
@@ -72,3 +75,30 @@ jobs:
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo 'docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+  deploy-to-container-apps:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+      - name: Output deployment info
+        run: |
+          echo "### 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Container App:** \`${{ env.CONTAINER_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** \`${{ env.RESOURCE_GROUP }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
