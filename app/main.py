@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, Request, HTTPException, File, Form, UploadFile
+from fastapi import FastAPI, Request, HTTPException, File, Form, UploadFile, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -26,6 +26,7 @@ from app.api.resume_roast.router import router as resume_roast_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.database.user_service import UserService
 from app.schemas.user import UserCreate
 from sqlalchemy.ext.asyncio import AsyncSession
