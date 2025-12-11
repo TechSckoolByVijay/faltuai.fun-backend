@@ -89,32 +89,40 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
       - name: Deploy to Container Apps
-        uses: azure/container-apps-deploy-action@v1
+        uses: azure/CLI@v1
         with:
-          containerAppName: ${{ env.CONTAINER_APP_NAME }}
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          environmentVariables: |
-            DATABASE_URL=postgresql://dbadmin:FaltuAIfun_p@55word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?sslmode=require
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
-            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-            FRONTEND_URL=https://techsckoolbyvijay.github.io/faltuai.fun-frontend
-            LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 }}
-            LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }}
-            LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT }}
-            LANGCHAIN_ENDPOINT=${{ secrets.LANGCHAIN_ENDPOINT }}
-            LANGSMITH_AUTO_BATCH_TRACING=${{ secrets.LANGSMITH_AUTO_BATCH_TRACING }}
-            AZURE_DOC_INTELLIGENCE_ENDPOINT=${{ secrets.AZURE_DOC_INTELLIGENCE_ENDPOINT }}
-            AZURE_DOC_INTELLIGENCE_KEY=${{ secrets.AZURE_DOC_INTELLIGENCE_KEY }}
-            DEBUG=false
-            ENVIRONMENT=production
-            LOG_LEVEL=INFO
+          azcliversion: 2.30.0
+          inlineScript: |
+            echo "🚀 Updating Container App with new image and environment variables..."
+            
+            # Update the container app with new image and all environment variables
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+              --set-env-vars \
+                DATABASE_URL="postgresql://dbadmin:FaltuAIfun_p@55word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?sslmode=require" \
+                POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
+                POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+                POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+                GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+                GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+                OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+                OPENAI_MODEL="${{ secrets.OPENAI_MODEL }}" \
+                JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}" \
+                FRONTEND_URL="https://techsckoolbyvijay.github.io/faltuai.fun-frontend" \
+                LANGCHAIN_TRACING_V2="${{ secrets.LANGCHAIN_TRACING_V2 }}" \
+                LANGCHAIN_API_KEY="${{ secrets.LANGCHAIN_API_KEY }}" \
+                LANGCHAIN_PROJECT="${{ secrets.LANGCHAIN_PROJECT }}" \
+                LANGCHAIN_ENDPOINT="${{ secrets.LANGCHAIN_ENDPOINT }}" \
+                LANGSMITH_AUTO_BATCH_TRACING="${{ secrets.LANGSMITH_AUTO_BATCH_TRACING }}" \
+                AZURE_DOC_INTELLIGENCE_ENDPOINT="${{ secrets.AZURE_DOC_INTELLIGENCE_ENDPOINT }}" \
+                AZURE_DOC_INTELLIGENCE_KEY="${{ secrets.AZURE_DOC_INTELLIGENCE_KEY }}" \
+                DEBUG="false" \
+                ENVIRONMENT="production" \
+                LOG_LEVEL="INFO"
+            
+            echo "✅ Container App deployment completed!"
           
       - name: Verify deployment
         uses: azure/CLI@v1
