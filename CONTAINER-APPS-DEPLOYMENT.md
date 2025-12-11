@@ -72,7 +72,18 @@ az containerapp create \
   --max-replicas 3
 ```
 
-### 2. GitHub Secrets Setup
+### 2. Google OAuth Configuration
+
+**Update Google Cloud Console** with your Container App URL:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to APIs & Services → Credentials
+3. Edit your OAuth 2.0 Client ID
+4. Add authorized redirect URI:
+   ```
+   https://faltuai.reddune-c0e74598.centralindia.azurecontainerapps.io/auth/google/callback
+   ```
+
+### 3. GitHub Secrets Setup
 
 Create Azure service principal for GitHub Actions:
 
@@ -90,7 +101,7 @@ Add the JSON output as `AZURE_CREDENTIALS` secret in GitHub:
 - Name: `AZURE_CREDENTIALS`
 - Value: [JSON output from above command]
 
-### 3. Required GitHub Secrets
+### 4. Required GitHub Secrets
 
 Make sure these secrets are set in your dev environment:
 
