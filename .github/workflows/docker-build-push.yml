@@ -89,22 +89,27 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
       - name: Deploy to Container Apps
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         with:
-          azcliversion: 2.30.0
           inlineScript: |
             echo "🚀 Installing Container Apps extension and updating app..."
             
-            # Install Container Apps extension
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az extension add --name containerapp --upgrade
+            # Install Container Apps extension with latest version
+            az extension add --name containerapp --upgrade --allow-preview true
             
-            # Update the container app with new image and all environment variables
+            # Update container image first
+            echo "📦 Updating container image..."
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.RESOURCE_GROUP }} \
-              --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-              --set-env-vars \
+              --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Update environment variables separately to avoid API conflicts
+            echo "🔧 Setting environment variables..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --replace-env-vars \
                 DATABASE_URL="postgresql://dbadmin:FaltuAIfun_p@55word@faltuaidb.postgres.database.azure.com:5432/faltuai_db?sslmode=require" \
                 POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
                 POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
