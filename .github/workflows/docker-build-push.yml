@@ -11,9 +11,9 @@ on:
 env:
   REGISTRY: faltuaicr.azurecr.io
   IMAGE_NAME: faltuai-backend
-  CONTAINER_APP_NAME: faltuai-backend-app
-  RESOURCE_GROUP: faltuai-rg
-  CONTAINER_APP_ENVIRONMENT: faltuai-env
+  CONTAINER_APP_NAME: faltuai
+  RESOURCE_GROUP: falutuai.fun
+  CONTAINER_APP_ENVIRONMENT: managedEnvironment-falutuaifun-bd2b
 
 jobs:
   build-and-push:
