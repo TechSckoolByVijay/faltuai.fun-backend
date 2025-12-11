@@ -102,11 +102,43 @@ async def health_check():
     """
     Health check endpoint for monitoring
     """
+    from datetime import datetime
     return {
         "status": "healthy",
-        "timestamp": "2024-01-01T00:00:00Z",  # TODO: Add real timestamp
+        "timestamp": datetime.utcnow().isoformat() + "Z",
         "version": settings.APP_VERSION
     }
+
+@app.get("/health/db")
+async def database_health_check(db: AsyncSession = Depends(get_db)):
+    """
+    Database health check endpoint
+    """
+    try:
+        # Try to execute a simple query
+        from sqlalchemy import text
+        result = await db.execute(text("SELECT 1"))
+        row = result.fetchone()
+        
+        if row and row[0] == 1:
+            from datetime import datetime
+            return {
+                "status": "healthy",
+                "database": "connected",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "database": "query_failed",
+                "error": "Query did not return expected result"
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "connection_failed",
+            "error": str(e)
+        }
 
 # Test endpoint for LangSmith tracing without authentication
 @app.post("/test-roast")
