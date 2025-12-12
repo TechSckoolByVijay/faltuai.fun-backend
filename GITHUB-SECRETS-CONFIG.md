@@ -40,7 +40,7 @@ JWT_SECRET_KEY=<generate-secure-random-key>
 
 ### 7. Frontend URL
 ```
-FRONTEND_URL=https://techsckoolbyvijay.github.io/faltuai.fun-frontend
+FRONTEND_URL=https://faltooai.fun
 ```
 
 ### 8. LangSmith (Optional)
