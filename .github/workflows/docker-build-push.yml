@@ -105,7 +105,7 @@ jobs:
                 OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
                 OPENAI_MODEL="${{ secrets.OPENAI_MODEL }}" \
                 JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}" \
-                FRONTEND_URL="https://techsckoolbyvijay.github.io/faltuai.fun-frontend" \
+                FRONTEND_URL="https://faltooai.fun" \
                 LANGCHAIN_TRACING_V2="${{ secrets.LANGCHAIN_TRACING_V2 }}" \
                 LANGCHAIN_API_KEY="${{ secrets.LANGCHAIN_API_KEY }}" \
                 LANGCHAIN_PROJECT="${{ secrets.LANGCHAIN_PROJECT }}" \
