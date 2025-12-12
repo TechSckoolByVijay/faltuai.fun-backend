@@ -20,8 +20,8 @@ class Settings:
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     
     # Application Configuration
-    APP_NAME: str = "FaltuAI Fun Backend"
-    APP_VERSION: str = "1.0.2"  # Updated after database schema fix
+    APP_NAME: str = "FaltooAI Backend"
+    APP_VERSION: str = "1.1.0"  # Updated with FaltooAI branding and custom domain support
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     
     # CORS Configuration
@@ -32,6 +32,8 @@ class Settings:
         "http://127.0.0.1:5173",
         FRONTEND_URL,
         "https://techsckoolbyvijay.github.io",  # GitHub Pages root
+        "https://faltooai.fun",  # Custom domain
+        "http://faltooai.fun",   # Custom domain (HTTP for testing)
     ]
     
     # Database Configuration (for future use)
