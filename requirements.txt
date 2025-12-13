@@ -13,11 +13,13 @@ langchain==0.2.16
 langchain-openai==0.1.25
 langchain-core==0.2.40
 langchain-community==0.2.17
+langgraph==0.2.38
 langsmith==0.1.121
 
 # Document processing
 azure-ai-documentintelligence==1.0.0b1
 PyPDF2==3.0.1
+reportlab==4.0.7
 
 # Database
 sqlalchemy==2.0.23

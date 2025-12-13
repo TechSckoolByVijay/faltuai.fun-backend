@@ -10,6 +10,7 @@ from datetime import datetime
 # Local imports
 from app.core.database import get_db
 from app.core.security import get_current_active_user
+from app.services.common import db_service
 from app.models.user import User
 from app.models.skill_assessment import (
     SkillAssessment, 
@@ -26,7 +27,8 @@ from app.schemas.skill_assessment import (
     LearningPlanResponse,
     DashboardData,
     QuizQuestionResponse,
-    QuizOption
+    QuizOption,
+    ExperienceLevel
 )
 from app.services.skill_assessment_ai_service import SkillAssessmentAIService
 
@@ -64,11 +66,11 @@ async def start_assessment(
         db.add(assessment)
         await db.flush()  # Get the assessment ID
         
-        # Generate quiz questions using AI
+        # Generate quiz questions using AI (dynamic count based on topic/experience)
         ai_questions = await ai_service.generate_quiz_questions(
             topic=request.topic,
-            experience_level=request.experience_level,
-            num_questions=12
+            experience_level=request.experience_level
+            # num_questions is now calculated automatically
         )
         
         # Save questions to database
@@ -167,11 +169,13 @@ async def submit_quiz_answers(
             })
         
         # Use AI to evaluate answers
+        # Convert string back to enum for AI service
+        experience_level_enum = ExperienceLevel(assessment.experience_level)
         evaluation = await ai_service.evaluate_quiz_answers(
             topic=assessment.topic,
             questions=questions_data,
             answers=request.answers,
-            experience_level=assessment.experience_level
+            experience_level=experience_level_enum
         )
         
         # Save evaluation results
@@ -243,15 +247,28 @@ async def generate_learning_plan(
             user_experience_level=assessment.experience_level
         )
         
+        # Debug logging
+        logger.info(f"Generated learning plan: modules={len(learning_plan.learning_modules)}, projects={len(learning_plan.project_ideas)}, trends={len(learning_plan.market_trends)}")
+        
         # Save learning plan to database
+        # Store the complete plan in plan_content for retrieval
+        plan_content = {
+            "learning_modules": [mod.dict() for mod in learning_plan.learning_modules],
+            "project_ideas": [proj.dict() for proj in learning_plan.project_ideas],
+            "market_trends": [trend.dict() for trend in learning_plan.market_trends],
+            "learning_resources": learning_plan.learning_resources if hasattr(learning_plan, 'learning_resources') else [],
+            "career_progression": learning_plan.career_progression if hasattr(learning_plan, 'career_progression') else None,
+            "market_research_insights": learning_plan.market_research_insights if hasattr(learning_plan, 'market_research_insights') else None
+        }
+        
         db_learning_plan = LearningPlan(
             assessment_id=assessment.id,
-            plan_content=json.dumps(learning_plan.dict(exclude={"assessment_id", "plan_id", "created_at"})),
+            plan_content=json.dumps(plan_content),
             timeline_weeks=learning_plan.timeline_weeks,
             priority_skills=json.dumps(learning_plan.priority_skills),
-            recommended_resources=json.dumps([mod.dict() for mod in learning_plan.learning_modules]),
-            project_ideas=json.dumps([proj.dict() for proj in learning_plan.project_ideas]),
-            market_trends=json.dumps([trend.dict() for trend in learning_plan.market_trends])
+            recommended_resources=json.dumps([]),  # Deprecated - keeping for backward compatibility
+            project_ideas=json.dumps([]),  # Deprecated - data now in plan_content
+            market_trends=json.dumps([])  # Deprecated - data now in plan_content
         )
         
         db.add(db_learning_plan)
@@ -325,6 +342,9 @@ async def get_assessment_dashboard(
                 priority_skills=json.loads(assessment.learning_plan.priority_skills),
                 project_ideas=plan_data.get("project_ideas", []),
                 market_trends=plan_data.get("market_trends", []),
+                learning_resources=plan_data.get("learning_resources", []),
+                career_progression=plan_data.get("career_progression"),
+                market_research_insights=plan_data.get("market_research_insights"),
                 created_at=assessment.learning_plan.created_at
             )
         
@@ -364,34 +384,56 @@ async def export_learning_plan_pdf(
     4. Return PDF file
     """
     try:
+        from app.services.pdf_service import PDFService
+        from fastapi.responses import Response
+        
         user_id = current_user.id
         
-        # Get assessment with learning plan
+        # Get assessment with learning plan and evaluation result
         result = await db.execute(
             select(SkillAssessment)
-            .options(selectinload(SkillAssessment.learning_plan))
+            .options(
+                selectinload(SkillAssessment.learning_plan),
+                selectinload(SkillAssessment.evaluation_result)
+            )
             .filter(SkillAssessment.id == assessment_id, SkillAssessment.user_id == user_id)
         )
         assessment = result.scalar_one_or_none()
         
-        if not assessment or not assessment.learning_plan:
-            raise HTTPException(status_code=404, detail="Learning plan not found")
+        if not assessment or not assessment.learning_plan or not assessment.evaluation_result:
+            raise HTTPException(status_code=404, detail="Learning plan or evaluation result not found")
         
-        # TODO: Implement PDF generation
-        # For now, return JSON as placeholder
+        # Prepare assessment data for PDF
         plan_data = json.loads(assessment.learning_plan.plan_content)
+        assessment_data = {
+            "id": assessment.id,
+            "topic": assessment.topic,
+            "experience_level": assessment.experience_level,
+            "overall_score": assessment.evaluation_result.overall_score,
+            "strengths": assessment.evaluation_result.strengths or [],
+            "areas_for_improvement": assessment.evaluation_result.weaknesses or [],
+            "created_at": assessment.created_at.strftime('%Y-%m-%d %H:%M'),
+            "learning_plan": plan_data
+        }
+        
+        # Generate PDF
+        pdf_service = PDFService()
+        pdf_data = pdf_service.generate_learning_plan_pdf(assessment_data)
         
         # Update export count
         assessment.learning_plan.export_count += 1
         await db.commit()
         
-        # Return placeholder response
-        return {
-            "message": "PDF export feature coming soon",
-            "assessment_id": assessment_id,
-            "export_count": assessment.learning_plan.export_count,
-            "plan_data": plan_data
-        }
+        # Return PDF file
+        filename = f"learning_plan_{assessment.topic.replace(' ', '_')}_{assessment.id}.pdf"
+        return Response(
+            content=pdf_data,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Type": "application/pdf"
+            }
+        )
         
     except Exception as e:
         logger.error(f"Error exporting PDF: {e}")

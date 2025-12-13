@@ -82,22 +82,25 @@ class LearningResource(BaseModel):
 class LearningModule(BaseModel):
     title: str = Field(..., description="Module title")
     description: str = Field(..., description="Module description")
-    priority: str = Field(..., description="Priority level (High, Medium, Low)")
-    estimated_weeks: int = Field(..., ge=1, description="Estimated completion weeks")
-    resources: List[LearningResource] = Field(..., description="Recommended resources")
+    duration_weeks: int = Field(..., ge=1, description="Module duration in weeks")
+    resources: List[LearningResource] = Field(default=[], description="Recommended resources")
+    learning_objectives: List[str] = Field(default=[], description="Learning objectives for this module")
+    weekly_breakdown: List[Dict[str, Any]] = Field(default=[], description="Week-by-week breakdown of the module")
 
 class ProjectIdea(BaseModel):
     title: str = Field(..., description="Project title")
     description: str = Field(..., description="Project description")
     difficulty: DifficultyLevel = Field(..., description="Project difficulty")
-    skills_practiced: List[str] = Field(..., description="Skills this project helps develop")
-    estimated_hours: int = Field(..., ge=1, description="Estimated project hours")
+    duration_weeks: int = Field(default=2, description="Estimated project duration in weeks")
+    technologies: List[str] = Field(default=[], description="Technologies used in project")
+    learning_objectives: List[str] = Field(default=[], description="Skills this project helps develop")
 
 class MarketTrend(BaseModel):
-    trend: str = Field(..., description="Market trend description")
-    relevance: str = Field(..., description="Relevance to user's skill set")
-    growth_rate: Optional[str] = Field(None, description="Market growth information")
-    salary_impact: Optional[str] = Field(None, description="Impact on salary potential")
+    trend_name: str = Field(..., description="Market trend name")
+    relevance_score: int = Field(..., ge=0, le=100, description="Relevance score 0-100")
+    time_to_learn_weeks: int = Field(..., ge=1, description="Estimated time to learn in weeks")
+    job_market_impact: str = Field(..., description="Impact on job market")
+    resources: List[str] = Field(default=[], description="Learning resources for this trend")
 
 class LearningPlanResponse(BaseModel):
     assessment_id: int = Field(..., description="Assessment ID")
@@ -107,12 +110,15 @@ class LearningPlanResponse(BaseModel):
     priority_skills: List[str] = Field(..., description="High-priority skills to focus on")
     project_ideas: List[ProjectIdea] = Field(..., description="Practical project suggestions")
     market_trends: List[MarketTrend] = Field(..., description="Relevant market insights")
+    learning_resources: List[LearningResource] = Field(default=[], description="Recommended learning resources")
+    career_progression: Optional[str] = Field(None, description="Career progression guidance")
+    market_research_insights: Optional[Dict] = Field(None, description="Market research insights")
     created_at: datetime = Field(..., description="Plan creation timestamp")
 
 class DashboardData(BaseModel):
     assessment_id: int = Field(..., description="Assessment ID")
     topic: str = Field(..., description="Assessment topic")
-    evaluation: EvaluationSummary = Field(..., description="Assessment evaluation results")
+    evaluation: Optional[EvaluationSummary] = Field(None, description="Assessment evaluation results")
     learning_plan: Optional[LearningPlanResponse] = Field(None, description="Learning plan if generated")
     completion_status: str = Field(..., description="Assessment completion status")
     created_at: datetime = Field(..., description="Assessment creation date")
