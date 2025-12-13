@@ -462,6 +462,7 @@ Return as JSON:
                         'title': res.get('title', ''),
                         'type': res.get('type', 'course'),
                         'url': res.get('url_pattern', '#'),
+                        'cost': res.get('cost', 'Free'),
                         'difficulty': difficulty_map.get(res.get('difficulty', 'intermediate'), DifficultyLevel.MEDIUM).value,
                         'estimated_hours': res.get('estimated_hours', 10)
                     }

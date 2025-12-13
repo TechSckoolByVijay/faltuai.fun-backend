@@ -176,6 +176,7 @@ class SkillAssessmentAIService:
                         title=res.get('title', ''),
                         type=res.get('type', 'course'),
                         url=res.get('url', '#'),
+                        cost=res.get('cost', 'Free'),
                         difficulty=self._map_to_difficulty_level(res.get('difficulty', 'intermediate')),
                         estimated_hours=res.get('estimated_hours', 10)
                     )
@@ -216,6 +217,19 @@ class SkillAssessmentAIService:
                 )
                 market_trends.append(market_trend)
             
+            # Convert learning resources
+            learning_resources = []
+            for res in plan_data.get('learning_resources', []):
+                resource = LearningResource(
+                    title=res.get('title', ''),
+                    type=res.get('type', 'course'),
+                    url=res.get('url_pattern', res.get('url', '#')),
+                    cost=res.get('cost', 'Free'),
+                    difficulty=self._map_to_difficulty_level(res.get('difficulty', 'intermediate')),
+                    estimated_hours=res.get('estimated_hours', 10)
+                )
+                learning_resources.append(resource)
+            
             # Build final learning plan
             learning_plan = LearningPlanResponse(
                 assessment_id=evaluation.assessment_id,
@@ -225,7 +239,7 @@ class SkillAssessmentAIService:
                 priority_skills=plan_data.get('priority_skills', []),
                 project_ideas=project_ideas,
                 market_trends=market_trends,
-                learning_resources=plan_data.get('learning_resources', []),
+                learning_resources=learning_resources,
                 career_progression=plan_data.get('career_progression'),
                 market_research_insights=plan_data.get('market_research_insights'),
                 created_at=datetime.utcnow()

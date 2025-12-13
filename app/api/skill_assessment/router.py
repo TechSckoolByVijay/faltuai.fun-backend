@@ -256,7 +256,7 @@ async def generate_learning_plan(
             "learning_modules": [mod.dict() for mod in learning_plan.learning_modules],
             "project_ideas": [proj.dict() for proj in learning_plan.project_ideas],
             "market_trends": [trend.dict() for trend in learning_plan.market_trends],
-            "learning_resources": learning_plan.learning_resources if hasattr(learning_plan, 'learning_resources') else [],
+            "learning_resources": [res.dict() for res in learning_plan.learning_resources] if hasattr(learning_plan, 'learning_resources') else [],
             "career_progression": learning_plan.career_progression if hasattr(learning_plan, 'career_progression') else None,
             "market_research_insights": learning_plan.market_research_insights if hasattr(learning_plan, 'market_research_insights') else None
         }
