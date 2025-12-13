@@ -53,6 +53,11 @@ class Settings:
     AZURE_DOC_INTELLIGENCE_ENDPOINT: str = os.getenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "dummy-endpoint")
     AZURE_DOC_INTELLIGENCE_KEY: str = os.getenv("AZURE_DOC_INTELLIGENCE_KEY", "dummy-key")
     
+    # Market Research API Keys
+    SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")  # Serper.dev Google Search API
+    GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")  # GitHub API personal access token (optional, higher rate limits)
+    YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")  # YouTube Data API v3 key
+    
     # File Upload Configuration
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_FILE_TYPES: list = ["application/pdf", "text/plain"]

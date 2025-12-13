@@ -250,6 +250,16 @@ async def generate_learning_plan(
         # Debug logging
         logger.info(f"Generated learning plan: modules={len(learning_plan.learning_modules)}, projects={len(learning_plan.project_ideas)}, trends={len(learning_plan.market_trends)}")
         
+        # Delete existing learning plan if exists (to avoid duplicate key error)
+        existing_plan = await db.execute(
+            select(LearningPlan).filter(LearningPlan.assessment_id == assessment.id)
+        )
+        existing = existing_plan.scalar_one_or_none()
+        if existing:
+            logger.info(f"Deleting existing learning plan for assessment {assessment.id}")
+            await db.delete(existing)
+            await db.commit()
+        
         # Save learning plan to database
         # Store the complete plan in plan_content for retrieval
         plan_content = {

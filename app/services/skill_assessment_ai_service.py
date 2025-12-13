@@ -2,6 +2,7 @@ import json
 import asyncio
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from app.utils.date_utils import current_period
 from app.services.common import llm_service
 from app.services.market_research_agent import market_research_agent
 from app.services.learning_plan_agent import learning_plan_agent

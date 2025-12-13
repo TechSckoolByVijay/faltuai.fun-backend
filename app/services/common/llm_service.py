@@ -87,6 +87,7 @@ class LLMService:
     ) -> Dict[str, Any]:
         """
         Generate structured JSON response following a specific schema
+        Uses OpenAI's JSON mode for guaranteed valid JSON
         """
         full_prompt = f"""
 {prompt}
@@ -97,18 +98,30 @@ RESPONSE SCHEMA:
 Generate a valid JSON response matching the schema above.
 """
         
-        response = await self.call_async(
-            prompt=full_prompt,
-            system_message=system_message,
-            temperature=temperature,
-            json_response=True
-        )
-        
         try:
-            return json.loads(response)
+            # Use OpenAI's JSON mode for guaranteed valid JSON
+            client = ChatOpenAI(
+                model_name="gpt-4o-mini",
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+                temperature=temperature,
+                max_tokens=8000,  # Increased for detailed curriculum design
+                model_kwargs={"response_format": {"type": "json_object"}}
+            )
+            
+            messages = []
+            if system_message:
+                messages.append(SystemMessage(content=system_message))
+            messages.append(HumanMessage(content=full_prompt))
+            
+            response = await client.ainvoke(messages)
+            return json.loads(response.content.strip())
+            
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {response}")
+            logger.error(f"Failed to parse JSON response: {response.content}")
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
+        except Exception as e:
+            logger.error(f"Structured response generation failed: {e}")
+            raise Exception(f"LLM service error: {str(e)}")
     
     async def chat_completion(
         self,

@@ -113,6 +113,9 @@ jobs:
                 LANGSMITH_AUTO_BATCH_TRACING="${{ secrets.LANGSMITH_AUTO_BATCH_TRACING }}" \
                 AZURE_DOC_INTELLIGENCE_ENDPOINT="${{ secrets.AZURE_DOC_INTELLIGENCE_ENDPOINT }}" \
                 AZURE_DOC_INTELLIGENCE_KEY="${{ secrets.AZURE_DOC_INTELLIGENCE_KEY }}" \
+                YOUTUBE_API_KEY="${{ secrets.YOUTUBE_API_KEY }}" \
+                GITHUB_TOKEN="${{ secrets.GH_API_TOKEN }}" \
+                SERPER_API_KEY="${{ secrets.SERPER_API_KEY }}" \
                 DEBUG="false" \
                 ENVIRONMENT="production" \
                 LOG_LEVEL="INFO"
@@ -176,4 +179,5 @@ jobs:
           echo "- OpenAI API" >> $GITHUB_STEP_SUMMARY
           echo "- LangChain/LangSmith" >> $GITHUB_STEP_SUMMARY
           echo "- Azure Document Intelligence" >> $GITHUB_STEP_SUMMARY
+          echo "- Market Research APIs (YouTube, GitHub, Serper)" >> $GITHUB_STEP_SUMMARY
           echo "- Production settings" >> $GITHUB_STEP_SUMMARY

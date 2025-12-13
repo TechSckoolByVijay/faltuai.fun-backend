@@ -5,6 +5,7 @@ import io
 from datetime import datetime
 from typing import Dict, Any, List
 from reportlab.lib import colors
+from app.utils.date_utils import current_period
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -186,19 +187,65 @@ class PDFService:
                 # Show weekly breakdown for this module if available
                 weekly_breakdown = module.get('weekly_breakdown', [])
                 if weekly_breakdown:
+                    story.append(Paragraph(f"   <b>Weekly Breakdown:</b>", self.styles['Normal']))
                     for week in weekly_breakdown[:4]:  # Show first 4 weeks per module
                         if not isinstance(week, dict):
                             continue
                         week_num = week.get('week', 'N/A')
-                        objectives = week.get('objectives', [])
-                        hours = week.get('hours_per_week', 'N/A')
+                        theme = week.get('theme', '')
+                        focus_area = week.get('focus_area', '')
+                        why_this_week = week.get('why_this_week', '')
+                        goals = week.get('goals', [])
+                        hours = week.get('time_commitment_hours', 'N/A')
                         
-                        if objectives:
-                            story.append(Paragraph(f"   Week {week_num} ({hours}h/week):", self.styles['Normal']))
-                            for obj in objectives[:3]:  # Limit to 3 objectives per week
-                                story.append(Paragraph(f"      • {obj}", self.styles['Normal']))
+                        story.append(Paragraph(f"   <b>Week {week_num}: {theme}</b> ({hours}h/week)", self.styles['Normal']))
+                        
+                        if focus_area:
+                            story.append(Paragraph(f"      Focus: {focus_area}", self.styles['Normal']))
+                        
+                        if why_this_week:
+                            story.append(Paragraph(f"      Why: {why_this_week}", self.styles['Normal']))
+                        
+                        if goals:
+                            story.append(Paragraph(f"      Goals:", self.styles['Normal']))
+                            for goal in goals[:3]:  # Limit to 3 goals per week
+                                story.append(Paragraph(f"         • {goal}", self.styles['Normal']))
+                        
+                        story.append(Spacer(1, 5))
                 
                 story.append(Spacer(1, 10))
+            story.append(Spacer(1, 15))
+        
+        # Project ideas
+        project_ideas = learning_plan.get('project_ideas', [])
+        if project_ideas:
+            story.append(Paragraph("🛠️ <b>Project Ideas:</b>", self.styles['SectionHeader']))
+            for i, project in enumerate(project_ideas, 1):
+                if not isinstance(project, dict):
+                    continue
+                    
+                title = project.get('title', 'Untitled Project')
+                difficulty = project.get('difficulty', 'N/A')
+                duration = project.get('duration_weeks', 'N/A')
+                description = project.get('description', '')
+                technologies = project.get('technologies', [])
+                
+                story.append(Paragraph(f"<b>Project {i}: {title}</b> ({difficulty} • {duration} weeks)", self.styles['Normal']))
+                
+                # Format description with line breaks
+                if description:
+                    # Split by \n\n for paragraphs
+                    paragraphs = description.split('\\n\\n')
+                    for para in paragraphs:
+                        if para.strip():
+                            story.append(Paragraph(f"   {para.strip()}", self.styles['Normal']))
+                            story.append(Spacer(1, 5))
+                
+                if technologies:
+                    tech_list = ', '.join(technologies[:5])
+                    story.append(Paragraph(f"   <b>Technologies:</b> {tech_list}", self.styles['Normal']))
+                
+                story.append(Spacer(1, 12))
             story.append(Spacer(1, 15))
         
         # Learning resources

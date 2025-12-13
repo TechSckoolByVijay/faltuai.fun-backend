@@ -17,6 +17,7 @@ from langchain_openai import ChatOpenAI
 
 from app.services.common import llm_service
 from app.services.market_research_agent import market_research_agent
+from app.utils.date_utils import current_period
 from app.schemas.skill_assessment import (
     ExperienceLevel,
     LearningPlanResponse,
@@ -198,7 +199,7 @@ Skills to Learn:
 Create 6-10 SMART learning objectives that:
 1. Are specific and measurable
 2. Build progressively from fundamentals to advanced
-3. Align with current industry needs (Q4 2025)
+3. Align with current industry needs ({current_period['quarter_full']})
 4. Can be achieved within 12-16 weeks
 
 Return as JSON:
@@ -241,20 +242,68 @@ Return as JSON:
         """Node 4: Design structured curriculum with modules"""
         logger.info("Designing curriculum structure")
         
+        # Build detailed skill analysis for context
+        strengths_context = "\n".join(f"- STRENGTH: {s}" for s in state['strengths'][:5])
+        weaknesses_context = "\n".join(f"- WEAKNESS: {w}" for w in state['weaknesses'][:5])
+        # Handle skill_gaps - could be list of strings or list of dicts
+        skill_gaps_list = state['skill_gaps'][:8]
+        gaps_context = "\n".join(
+            f"- GAP: {gap.get('skill', gap) if isinstance(gap, dict) else gap}" 
+            for gap in skill_gaps_list
+        )
+        
         prompt = f"""
-You are a curriculum designer creating a comprehensive learning path for {state['topic']} at {state['experience_level']} level.
+You are an expert curriculum designer creating an IN-DEPTH, COMPREHENSIVE learning path for {state['topic']} at {state['experience_level']} level.
+
+Student's Current Profile:
+{strengths_context}
+
+{weaknesses_context}
+
+{gaps_context}
 
 Learning Objectives:
 {chr(10).join(f"- {obj.get('title', '')}: {obj.get('description', '')}" for obj in state['learning_objectives'])}
 
 Timeline: {state['timeline_weeks']} weeks
+Trending Technologies to Integrate: {', '.join(state['trending_technologies'][:5])}
+Market Insights: {state.get('market_insights', {}).get('summary', 'Focus on practical, job-ready skills')}
 
-Design 4-6 learning modules that:
-1. Build progressively from basics to advanced
-2. Each module is 2-3 weeks long
-3. Include specific topics, subtopics, and learning outcomes
-4. Cover both theoretical knowledge and practical skills
-5. Integrate trending technologies: {', '.join(state['trending_technologies'][:3])}
+Design 4-6 HIGHLY DETAILED learning modules that:
+1. Build progressively from basics to advanced concepts
+2. Each module spans 2-3 weeks
+3. For EACH module, provide:
+   - A 2-3 sentence description (max 250 characters) explaining what students learn and why
+   - How this module addresses their specific weaknesses
+   - List 5-8 specific topics
+   - Define 3-5 clear, measurable learning outcomes
+   - Provide detailed week-by-week breakdown (see requirements below)
+
+WEEKLY BREAKDOWN REQUIREMENTS (MOST IMPORTANT):
+For each week in the module:
+- Theme: Clear weekly focus area
+- Focus Area: Which specific student weakness this week addresses  
+- Why This Week: 1-2 sentences (max 200 chars) explaining connection to weaknesses and trends
+- Goals: 3 specific, measurable learning goals
+- Daily Breakdown: Array of 3 strings for Day 1-2, Day 3-4, Day 5-7
+- Deliverables: Array of 2 concrete outputs
+- Resources: Array of 1-2 resource names
+- Time Commitment: Hours per week (number)
+
+IMPORTANT JSON RULES:
+- Keep all text fields under 200 characters to avoid length limits
+- Use proper JSON escaping for quotes
+- Ensure all strings are properly closed
+- Prioritize clarity over verbosity
+
+CRITICAL REQUIREMENTS:
+- Make descriptions 3X MORE DETAILED than typical course outlines
+- Include specific technical concepts, not vague statements
+- Explain the "WHY" behind each module (career relevance, industry demand)
+- Reference real technologies, frameworks, and tools by name
+- Connect to student's strengths and weaknesses explicitly
+- Make it actionable with concrete examples
+- WEEKLY BREAKDOWN IS MANDATORY - each module must have detailed week-by-week plan
 
 CRITICAL: Return ONLY valid JSON. NO markdown code blocks, NO explanations, ONLY the JSON object.
 
@@ -262,18 +311,33 @@ Return as JSON:
 {{
     "modules": [
         {{
-            "title": "Module title",
-            "description": "Detailed description",
+            "title": "Descriptive Module Title",
+            "description": "DETAILED 3-5 sentence description explaining: (1) What concepts are covered, (2) Why they're important for career growth, (3) How they address specific weaknesses, (4) Real-world applications, (5) Industry relevance. Be SPECIFIC with technology names and concepts.",
             "duration_weeks": 2,
-            "topics": ["Topic 1", "Topic 2", "Topic 3"],
-            "learning_outcomes": ["Outcome 1", "Outcome 2"],
-            "practical_exercises": ["Exercise 1", "Exercise 2"],
+            "topics": ["Specific Topic 1 with details", "Topic 2: Subtopic A and B", "Advanced Topic 3", "etc..."],
+            "learning_objectives": [
+                "Specific, measurable objective 1 with technical detail",
+                "Objective 2 that addresses a weakness",
+                "Objective 3 with real-world application"
+            ],
+            "practical_exercises": [
+                "Hands-on exercise 1 with detailed steps",
+                "Real-world project exercise 2"
+            ],
             "weekly_breakdown": [
                 {{
                     "week": 1,
-                    "theme": "Week theme",
-                    "goals": ["Goal 1", "Goal 2"],
-                    "deliverables": ["Deliverable 1"],
+                    "theme": "Specific weekly theme",
+                    "focus_area": "Primary skill/weakness being addressed this week",
+                    "why_this_week": "2-3 sentence justification: How this week's content addresses specific student weaknesses and aligns with market trends. Connect to their assessment results.",
+                    "goals": ["Detailed learning goal 1", "Goal 2 with technical specifics", "Goal 3"],
+                    "daily_breakdown": [
+                        "Day 1-2: Specific activities and concepts",
+                        "Day 3-4: Hands-on practice tasks",
+                        "Day 5-7: Project work and review"
+                    ],
+                    "deliverables": ["Concrete deliverable 1 with success criteria", "Mini-project/exercise"],
+                    "resources_to_use": ["Specific resource recommendation"],
                     "time_commitment_hours": 8
                 }}
             ]
@@ -316,7 +380,7 @@ Return as JSON:
         
         for module in state['learning_modules']:
             prompt = f"""
-You are a learning resource curator finding the best online resources for Q4 2025.
+You are a learning resource curator finding the best online resources for {current_period['quarter_full']}.
 
 Module: {module.get('title', '')}
 Topics: {', '.join(module.get('topics', []))}
@@ -370,32 +434,56 @@ Return as JSON:
         """Node 6: Generate hands-on project ideas"""
         logger.info("Generating project ideas")
         
+        # Extract student weaknesses for targeted project design
+        skill_gaps_raw = state.get('skill_gaps', [])[:8]
+        # Handle both string and dict formats
+        student_weaknesses = [
+            gap.get('skill', gap) if isinstance(gap, dict) else str(gap) 
+            for gap in skill_gaps_raw
+        ]
+        student_strengths = state.get('strengths', [])[:5]
+        
         prompt = f"""
-You are a technical mentor designing practical projects for a {state['experience_level']} {state['topic']} developer.
+You are a technical mentor designing HIGHLY DETAILED practical projects for a {state['experience_level']} {state['topic']} developer.
 
-Skills to Practice:
-{chr(10).join(f"- {skill}" for skill in state['skill_gaps'][:8])}
+STUDENT PROFILE:
+Current Strengths: {', '.join(student_strengths) if student_strengths else 'Not specified'}
+Key Weaknesses to Address: {', '.join(student_weaknesses)}
+
+CRITICAL: Each project description must be 3-4 sentences (max 400 characters) with paragraph breaks:
+- Sentence 1-2: Real-world problem and what you'll build
+- Sentence 3: Technical architecture overview  
+- Sentence 4: Career relevance
+
+Use \\n\\n for paragraph breaks (double backslash). Keep descriptions concise but informative.
 
 Create 4-6 progressively challenging project ideas that:
-1. Apply learned concepts in real-world scenarios
-2. Can be completed in 1-2 weeks each
-3. Build a strong portfolio
-4. Use modern Q4 2025 technologies and best practices
-5. Are relevant to current job market
+1. DIRECTLY address student's weaknesses: {', '.join(student_weaknesses[:3])}
+2. Apply learned concepts in real-world scenarios with production-ready patterns
+3. Can be completed in 1-2 weeks each with clear milestones
+4. Build a strong portfolio that demonstrates job-ready skills
+5. Use modern {current_period['quarter_full']} technologies and best practices (be specific: React 19, Next.js 15, etc.)
+6. Are relevant to current hiring trends: {state.get('market_insights', {}).get('hiring_trends', ['modern web apps'])[0] if state.get('market_insights') else 'modern development'}
+
+For each project:
+- Description: 4-6 detailed sentences explaining architecture, problem-solving approach, and technical implementation
+- Features: 5-8 specific features (not just "user authentication" but "JWT-based authentication with refresh tokens, OAuth 2.0 social login, role-based access control")
+- Learning Outcomes: 4-6 specific, measurable skills gained that directly address student weaknesses
+- Portfolio Value: 2-3 sentences explaining hiring manager perspective and market demand
 
 Return as JSON:
 {{
     "projects": [
         {{
             "title": "Project name",
-            "description": "What you'll build",
+            "description": "Paragraph 1: Problem and solution (2 sentences).\\n\\nParagraph 2: Technical stack and architecture (1-2 sentences).\\n\\nParagraph 3: Career impact (1 sentence).",
             "difficulty": "beginner|intermediate|advanced",
             "duration_weeks": 2,
             "technologies": ["tech1", "tech2", "tech3"],
             "skills_practiced": ["skill1", "skill2"],
-            "features": ["Feature 1", "Feature 2", "Feature 3"],
-            "learning_outcomes": ["Outcome 1", "Outcome 2"],
-            "portfolio_value": "Why this project strengthens portfolio",
+            "features": ["Specific Feature 1 with technical details", "Feature 2 with implementation approach", "Feature 3 with technology stack", "Feature 4", "Feature 5"],
+            "learning_outcomes": ["Specific measurable skill 1 addressing identified gaps", "Outcome 2 addressing another weakness", "Outcome 3", "Outcome 4"],
+            "portfolio_value": "2-3 sentences explaining why hiring managers value this, market demand for these skills, and career opportunities it unlocks",
             "github_topics": ["topic1", "topic2"],
             "deployment_options": ["platform1", "platform2"]
         }}
@@ -519,7 +607,7 @@ Return as JSON:
                         'trend_name': tech,
                         'relevance_score': 85,
                         'time_to_learn_weeks': 4,
-                        'job_market_impact': 'High demand in Q4 2025',
+                        'job_market_impact': f'High demand in {current_period["quarter_full"]}',
                         'resources': []
                     }
                     market_trends.append(trend)
