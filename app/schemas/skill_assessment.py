@@ -77,7 +77,7 @@ class LearningResource(BaseModel):
     url: Optional[str] = Field(None, description="Resource URL")
     cost: str = Field(..., description="Cost information (Free, $X, etc.)")
     difficulty: DifficultyLevel = Field(..., description="Resource difficulty level")
-    estimated_hours: Optional[int] = Field(None, description="Estimated study hours")
+    estimated_hours: Optional[float] = Field(None, description="Estimated study hours (can be fractional)")
 
 class LearningModule(BaseModel):
     title: str = Field(..., description="Module title")

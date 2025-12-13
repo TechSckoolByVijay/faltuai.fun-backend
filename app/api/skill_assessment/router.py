@@ -405,16 +405,54 @@ async def export_learning_plan_pdf(
         
         # Prepare assessment data for PDF
         plan_data = json.loads(assessment.learning_plan.plan_content)
+        
+        # Handle strengths and weaknesses - they might be JSON strings or already parsed lists
+        strengths = assessment.evaluation_result.strengths
+        if isinstance(strengths, str):
+            strengths = json.loads(strengths) if strengths else []
+        elif strengths is None:
+            strengths = []
+            
+        weaknesses = assessment.evaluation_result.weaknesses
+        if isinstance(weaknesses, str):
+            weaknesses = json.loads(weaknesses) if weaknesses else []
+        elif weaknesses is None:
+            weaknesses = []
+        
+        # Parse priority_skills from database column
+        try:
+            priority_skills = json.loads(assessment.learning_plan.priority_skills) if assessment.learning_plan.priority_skills else []
+        except (json.JSONDecodeError, TypeError):
+            priority_skills = []
+        
+        # Construct learning_plan data structure for PDF service
+        # PDF service expects: weekly_breakdown, recommended_timeline, priority_skills, career_progression, learning_resources
+        learning_plan_for_pdf = {
+            "learning_modules": plan_data.get("learning_modules", []),
+            "project_ideas": plan_data.get("project_ideas", []),
+            "market_trends": plan_data.get("market_trends", []),
+            "learning_resources": plan_data.get("learning_resources", []),
+            "career_progression": plan_data.get("career_progression"),
+            "market_research_insights": plan_data.get("market_research_insights"),
+            "priority_skills": priority_skills,
+            "recommended_timeline": f"{assessment.learning_plan.timeline_weeks} weeks" if assessment.learning_plan.timeline_weeks else None,
+            # Note: weekly_breakdown is inside each module, not at root level
+            # PDF service will need to handle this correctly
+        }
+        
         assessment_data = {
             "id": assessment.id,
             "topic": assessment.topic,
             "experience_level": assessment.experience_level,
             "overall_score": assessment.evaluation_result.overall_score,
-            "strengths": assessment.evaluation_result.strengths or [],
-            "areas_for_improvement": assessment.evaluation_result.weaknesses or [],
+            "strengths": strengths,
+            "areas_for_improvement": weaknesses,
             "created_at": assessment.created_at.strftime('%Y-%m-%d %H:%M'),
-            "learning_plan": plan_data
+            "learning_plan": learning_plan_for_pdf
         }
+        
+        # Debug logging
+        logger.info(f"PDF export data prepared: topic={assessment.topic}, modules={len(plan_data.get('learning_modules', []))}, strengths={len(strengths)}, priority_skills={len(priority_skills)}")
         
         # Generate PDF
         pdf_service = PDFService()

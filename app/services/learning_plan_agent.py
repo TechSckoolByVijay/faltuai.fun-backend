@@ -256,6 +256,8 @@ Design 4-6 learning modules that:
 4. Cover both theoretical knowledge and practical skills
 5. Integrate trending technologies: {', '.join(state['trending_technologies'][:3])}
 
+CRITICAL: Return ONLY valid JSON. NO markdown code blocks, NO explanations, ONLY the JSON object.
+
 Return as JSON:
 {{
     "modules": [
@@ -280,20 +282,29 @@ Return as JSON:
 }}
 """
         
-        try:
-            response = await llm_service.generate_structured_response(
-                prompt=prompt,
-                schema_description="JSON with modules array containing detailed curriculum structure",
-                temperature=0.7
-            )
-            
-            state['learning_modules'] = response.get('modules', [])
-            
-            logger.info(f"Created {len(state['learning_modules'])} learning modules")
-            
-        except Exception as e:
-            logger.error(f"Curriculum design failed: {e}")
-            state['learning_modules'] = []
+        # Retry logic for malformed JSON
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = await llm_service.generate_structured_response(
+                    prompt=prompt,
+                    schema_description="JSON with modules array containing detailed curriculum structure",
+                    temperature=0.7 - (attempt * 0.1)  # Reduce temperature on retries
+                )
+                
+                modules = response.get('modules', [])
+                if modules:  # Only accept if we got modules
+                    state['learning_modules'] = modules
+                    logger.info(f"Created {len(state['learning_modules'])} learning modules")
+                    break
+                else:
+                    logger.warning(f"Attempt {attempt + 1}: Empty modules array")
+                    
+            except Exception as e:
+                logger.error(f"Curriculum design attempt {attempt + 1} failed: {e}")
+                if attempt == max_retries - 1:
+                    logger.error("All retry attempts failed, using fallback")
+                    state['learning_modules'] = []
         
         return state
     

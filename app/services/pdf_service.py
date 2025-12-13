@@ -144,7 +144,7 @@ class PDFService:
         
         # Market research indicator
         market_research = learning_plan.get('market_research_insights', {})
-        if market_research.get('research_version'):
+        if market_research and market_research.get('research_version'):
             story.append(Paragraph(
                 f"🔥 <b>Learning plan generated with FRESH Q4 2025 market research</b>", 
                 self.styles['Normal']
@@ -167,18 +167,37 @@ class PDFService:
                 story.append(Paragraph(f"• {skill}", self.styles['Normal']))
             story.append(Spacer(1, 15))
         
-        # Weekly breakdown
-        weekly_plan = learning_plan.get('weekly_breakdown', [])
-        if weekly_plan:
-            story.append(Paragraph("📅 <b>Weekly Learning Plan:</b>", self.styles['SectionHeader']))
-            for week in weekly_plan[:12]:  # Show first 12 weeks
-                week_num = week.get('week', 'N/A')
-                objectives = week.get('objectives', [])
-                hours = week.get('hours_per_week', 'N/A')
+        # Learning modules with their weekly breakdown
+        learning_modules = learning_plan.get('learning_modules', [])
+        if learning_modules:
+            story.append(Paragraph("📖 <b>Learning Modules:</b>", self.styles['SectionHeader']))
+            for i, module in enumerate(learning_modules, 1):
+                if not isinstance(module, dict):
+                    continue
+                    
+                title = module.get('title', 'Untitled Module')
+                duration = module.get('duration_weeks', 'N/A')
+                description = module.get('description', '')
                 
-                story.append(Paragraph(f"<b>Week {week_num}</b> ({hours}h/week)", self.styles['Normal']))
-                for obj in objectives:
-                    story.append(Paragraph(f"  • {obj}", self.styles['Normal']))
+                story.append(Paragraph(f"<b>Module {i}: {title}</b> ({duration} weeks)", self.styles['Normal']))
+                if description:
+                    story.append(Paragraph(f"   {description}", self.styles['Normal']))
+                
+                # Show weekly breakdown for this module if available
+                weekly_breakdown = module.get('weekly_breakdown', [])
+                if weekly_breakdown:
+                    for week in weekly_breakdown[:4]:  # Show first 4 weeks per module
+                        if not isinstance(week, dict):
+                            continue
+                        week_num = week.get('week', 'N/A')
+                        objectives = week.get('objectives', [])
+                        hours = week.get('hours_per_week', 'N/A')
+                        
+                        if objectives:
+                            story.append(Paragraph(f"   Week {week_num} ({hours}h/week):", self.styles['Normal']))
+                            for obj in objectives[:3]:  # Limit to 3 objectives per week
+                                story.append(Paragraph(f"      • {obj}", self.styles['Normal']))
+                
                 story.append(Spacer(1, 10))
             story.append(Spacer(1, 15))
         
@@ -187,8 +206,11 @@ class PDFService:
         if resources:
             story.append(Paragraph("📖 <b>Recommended Learning Resources:</b>", self.styles['SectionHeader']))
             
-            # Add resources as formatted paragraphs instead of table
+            # Add resources as formatted paragraphs
             for i, resource in enumerate(resources[:8], 1):  # Limit to top 8 resources
+                if not isinstance(resource, dict):
+                    continue
+                    
                 title = resource.get('title') or resource.get('name', 'N/A')
                 res_type = resource.get('type', 'Resource')
                 description = resource.get('description', 'No description available')
@@ -198,6 +220,7 @@ class PDFService:
                 if resource.get('url'):
                     story.append(Paragraph(f"   URL: {resource['url']}", self.styles['Normal']))
                 story.append(Spacer(1, 8))
+            story.append(Spacer(1, 15))
         
         # Career progression
         career_progression = learning_plan.get('career_progression')
