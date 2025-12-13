@@ -3,7 +3,7 @@ Newsletter subscription API routes.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.newsletter import (
     NewsletterSubscriptionCreate,
@@ -17,11 +17,17 @@ from typing import List
 router = APIRouter(prefix="/newsletter", tags=["Newsletter"])
 
 
+@router.get("/health")
+async def newsletter_health():
+    """Health check for newsletter API."""
+    return {"status": "healthy", "message": "Newsletter API is working"}
+
+
 @router.post("/subscribe", response_model=NewsletterStatusResponse)
 async def subscribe_to_newsletter(
     subscription_data: NewsletterSubscriptionCreate,
     request: Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Subscribe to FaltooAI monthly newsletter.
@@ -34,7 +40,7 @@ async def subscribe_to_newsletter(
     client_ip = request.client.host if request.client else None
     
     # Check if email already exists
-    existing_subscription = NewsletterSubscriptionService.get_subscription_by_email(
+    existing_subscription = await NewsletterSubscriptionService.get_subscription_by_email(
         db, subscription_data.email
     )
     
@@ -47,7 +53,7 @@ async def subscribe_to_newsletter(
             )
         else:
             # Reactivate subscription
-            reactivated = NewsletterSubscriptionService.resubscribe_by_email(
+            reactivated = await NewsletterSubscriptionService.resubscribe_by_email(
                 db, subscription_data.email
             )
             if reactivated:
@@ -58,7 +64,7 @@ async def subscribe_to_newsletter(
                 )
     
     # Create new subscription
-    new_subscription = NewsletterSubscriptionService.create_subscription(
+    new_subscription = await NewsletterSubscriptionService.create_subscription(
         db=db,
         subscription_data=subscription_data,
         user_agent=user_agent,
@@ -85,14 +91,14 @@ async def subscribe_to_newsletter(
 @router.post("/unsubscribe", response_model=NewsletterStatusResponse)
 async def unsubscribe_from_newsletter(
     unsubscribe_data: NewsletterUnsubscribeRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Unsubscribe from newsletter.
     
     Remove email address from our newsletter mailing list.
     """
-    success = NewsletterSubscriptionService.unsubscribe_by_email(
+    success = await NewsletterSubscriptionService.unsubscribe_by_email(
         db, unsubscribe_data.email
     )
     
@@ -113,12 +119,12 @@ async def unsubscribe_from_newsletter(
 @router.get("/check/{email}", response_model=NewsletterStatusResponse)
 async def check_subscription_status(
     email: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Check newsletter subscription status for an email.
     """
-    subscription = NewsletterSubscriptionService.get_subscription_by_email(db, email)
+    subscription = await NewsletterSubscriptionService.get_subscription_by_email(db, email)
     
     if subscription:
         return NewsletterStatusResponse(
@@ -139,13 +145,13 @@ async def check_subscription_status(
 
 
 @router.get("/stats", response_model=NewsletterStatusResponse)
-async def get_newsletter_stats(db: Session = Depends(get_db)):
+async def get_newsletter_stats(db: AsyncSession = Depends(get_db)):
     """
     Get newsletter subscription statistics.
     
     Note: This endpoint should be protected in production.
     """
-    stats = NewsletterSubscriptionService.get_subscription_stats(db)
+    stats = await NewsletterSubscriptionService.get_subscription_stats(db)
     
     return NewsletterStatusResponse(
         success=True,
