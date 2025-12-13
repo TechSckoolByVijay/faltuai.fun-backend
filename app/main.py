@@ -21,9 +21,9 @@ import asyncio
 from app.config import settings
 from app.auth.google_oauth import google_oauth
 from app.auth.tokens import token_manager
-from app.api.feature1.router import router as feature1_router
 from app.api.resume_roast.router import router as resume_roast_router
 from app.api.newsletter.router import router as newsletter_router
+from app.api.skill_assessment.router import router as skill_assessment_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
@@ -78,9 +78,9 @@ async def shutdown_event():
         print(f"❌ Database shutdown error: {e}")
 
 # Include API routers
-app.include_router(feature1_router, prefix="/api/v1")
 app.include_router(resume_roast_router, prefix="/api/v1")
 app.include_router(newsletter_router, prefix="/api/v1")
+app.include_router(skill_assessment_router, prefix="/api/v1")
 
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
