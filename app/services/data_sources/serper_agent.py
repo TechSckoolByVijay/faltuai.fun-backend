@@ -299,25 +299,58 @@ class SerperSearchAgent:
         return requirements[:15]  # Top 15 most relevant
     
     def _extract_salary_mentions(self, results: List[Dict]) -> List[Dict[str, Any]]:
-        """Extract salary mentions from search results"""
+        """Extract salary mentions from search results with currency detection"""
         import re
         
         salary_data = []
-        salary_pattern = r'\$[\d,]+(?:k|K)?(?:\s*-\s*\$[\d,]+(?:k|K)?)?'
+        # Patterns for different currencies
+        usd_pattern = r'\$[\d,]+(?:k|K)?(?:\s*-\s*\$[\d,]+(?:k|K)?)?'
+        inr_pattern = r'₹[\d,]+(?:k|K|L|Cr)?(?:\s*-\s*₹[\d,]+(?:k|K|L|Cr)?)?'
+        eur_pattern = r'€[\d,]+(?:k|K)?(?:\s*-\s*€[\d,]+(?:k|K)?)?'
+        gbp_pattern = r'£[\d,]+(?:k|K)?(?:\s*-\s*£[\d,]+(?:k|K)?)?'
         
         for result in results:
             snippet = result.get("snippet", "")
             title = result.get("title", "")
+            url = result.get("link", "")
+            text = snippet + " " + title
             
-            # Find salary mentions
-            salaries = re.findall(salary_pattern, snippet + " " + title)
+            # Detect currency and location from URL and text
+            currency = "USD"
+            location = "Global"
+            
+            # Check URL for location hints
+            if "country=113" in url or ".in" in url or "india" in url.lower():
+                currency = "INR"
+                location = "India"
+            elif ".uk" in url or "united-kingdom" in url.lower():
+                currency = "GBP"
+                location = "United Kingdom"
+            elif ".eu" in url or "europe" in url.lower():
+                currency = "EUR"
+                location = "Europe"
+            
+            # Find salary mentions based on currency
+            salaries = []
+            if currency == "INR":
+                salaries = re.findall(inr_pattern, text)
+                if not salaries:  # Fallback to dollar sign which might be INR on Indian sites
+                    salaries = re.findall(usd_pattern, text)
+            elif currency == "GBP":
+                salaries = re.findall(gbp_pattern, text)
+            elif currency == "EUR":
+                salaries = re.findall(eur_pattern, text)
+            else:
+                salaries = re.findall(usd_pattern, text)
             
             if salaries:
                 salary_data.append({
                     "salary_mention": salaries,
+                    "currency": currency,
+                    "location": location,
                     "context": snippet[:200],
                     "source": result.get("displayLink", ""),
-                    "url": result.get("link", ""),
+                    "url": url,
                     "title": title
                 })
         

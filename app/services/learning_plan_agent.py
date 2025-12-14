@@ -57,6 +57,9 @@ class LearningPlanState(TypedDict):
     # Final output
     learning_plan: Dict[str, Any]
     error: str
+    
+    # Progress tracking
+    progress_callback: Any
 
 
 class LearningPlanAgent:
@@ -107,6 +110,14 @@ class LearningPlanAgent:
         """Node 1: Conduct market research for the skill area"""
         logger.info(f"Starting market research for {state['topic']}")
         
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'market_research',
+                'message': f'🔍 Researching latest {state["topic"]} market trends and salary data...',
+                'progress': 10
+            })
+        
         try:
             # Use existing market research agent
             research_result = await self.market_agent.research_market_trends(
@@ -133,6 +144,14 @@ class LearningPlanAgent:
     async def _skill_gap_analysis_node(self, state: LearningPlanState) -> LearningPlanState:
         """Node 2: Analyze skill gaps based on assessment and market data"""
         logger.info("Analyzing skill gaps")
+        
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'skill_gaps',
+                'message': f'📊 Analyzing your skill gaps and prioritizing learning areas...',
+                'progress': 25
+            })
         
         prompt = f"""
 You are a career development expert analyzing skill gaps for a {state['experience_level']} level professional in {state['topic']}.
@@ -190,6 +209,14 @@ Return as JSON:
         """Node 3: Define clear, measurable learning objectives"""
         logger.info("Defining learning objectives")
         
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'objectives',
+                'message': '🎯 Defining personalized learning objectives...',
+                'progress': 40
+            })
+        
         prompt = f"""
 You are an instructional designer creating learning objectives for a {state['experience_level']} {state['topic']} professional.
 
@@ -242,6 +269,14 @@ Return as JSON:
         """Node 4: Design structured curriculum with modules"""
         logger.info("Designing curriculum structure")
         
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'curriculum',
+                'message': '📚 Designing comprehensive curriculum with weekly breakdowns...',
+                'progress': 55
+            })
+        
         # Build detailed skill analysis for context
         strengths_context = "\n".join(f"- STRENGTH: {s}" for s in state['strengths'][:5])
         weaknesses_context = "\n".join(f"- WEAKNESS: {w}" for w in state['weaknesses'][:5])
@@ -262,6 +297,11 @@ Student's Current Profile:
 
 {gaps_context}
 
+**CRITICAL PRIORITY**: This learning plan must PRIMARILY address the student's WEAKNESSES and GAPS. 
+- Spend 80% of time on weak areas and gaps
+- Spend only 20% on strengthening existing knowledge
+- Do NOT waste student's time teaching what they already know well
+
 Learning Objectives:
 {chr(10).join(f"- {obj.get('title', '')}: {obj.get('description', '')}" for obj in state['learning_objectives'])}
 
@@ -270,21 +310,23 @@ Trending Technologies to Integrate: {', '.join(state['trending_technologies'][:5
 Market Insights: {state.get('market_insights', {}).get('summary', 'Focus on practical, job-ready skills')}
 
 Design 4-6 HIGHLY DETAILED learning modules that:
-1. Build progressively from basics to advanced concepts
-2. Each module spans 2-3 weeks
-3. For EACH module, provide:
+1. **PRIORITY #1**: Address WEAKNESSES FIRST - modules should directly target gaps revealed in assessment
+2. Build progressively from identified weak areas to advanced concepts
+3. Each module spans 2-3 weeks
+4. Skip or minimize topics where student showed strength
+5. For EACH module, provide:
    - A 2-3 sentence description (max 250 characters) explaining what students learn and why
-   - How this module addresses their specific weaknesses
-   - List 5-8 specific topics
+   - **CLEARLY STATE which specific WEAKNESS this module addresses** (mandatory)
+   - List 5-8 specific topics (focusing on weak areas)
    - Define 3-5 clear, measurable learning outcomes
    - Provide detailed week-by-week breakdown (see requirements below)
 
 WEEKLY BREAKDOWN REQUIREMENTS (MOST IMPORTANT):
 For each week in the module:
-- Theme: Clear weekly focus area
-- Focus Area: Which specific student weakness this week addresses  
-- Why This Week: 1-2 sentences (max 200 chars) explaining connection to weaknesses and trends
-- Goals: 3 specific, measurable learning goals
+- Theme: Clear weekly focus area FROM THE WEAKNESS LIST
+- Focus Area: Which specific student WEAKNESS this week addresses (not strengths!)
+- Why This Week: 1-2 sentences (max 200 chars) explaining how this fills a knowledge GAP
+- Goals: 3 specific, measurable learning goals targeting WEAK SKILLS
 - Daily Breakdown: Array of 3 strings for Day 1-2, Day 3-4, Day 5-7
 - Deliverables: Array of 2 concrete outputs
 - Resources: Array of 1-2 resource names
@@ -297,13 +339,17 @@ IMPORTANT JSON RULES:
 - Prioritize clarity over verbosity
 
 CRITICAL REQUIREMENTS:
+- **80% of content MUST address identified weaknesses and gaps**
+- Do NOT create modules for areas where student is already strong
 - Make descriptions 3X MORE DETAILED than typical course outlines
 - Include specific technical concepts, not vague statements
-- Explain the "WHY" behind each module (career relevance, industry demand)
+- Explain the "WHY" behind each module (fills knowledge gap, addresses weakness)
 - Reference real technologies, frameworks, and tools by name
-- Connect to student's strengths and weaknesses explicitly
+- Connect EVERY module to a specific weakness or gap
 - Make it actionable with concrete examples
 - WEEKLY BREAKDOWN IS MANDATORY - each module must have detailed week-by-week plan
+
+**REMEMBER**: User's time is valuable. Focus on what they DON'T know, not what they already know.
 
 CRITICAL: Return ONLY valid JSON. NO markdown code blocks, NO explanations, ONLY the JSON object.
 
@@ -311,13 +357,14 @@ Return as JSON:
 {{
     "modules": [
         {{
-            "title": "Descriptive Module Title",
-            "description": "DETAILED 3-5 sentence description explaining: (1) What concepts are covered, (2) Why they're important for career growth, (3) How they address specific weaknesses, (4) Real-world applications, (5) Industry relevance. Be SPECIFIC with technology names and concepts.",
+            "title": "Descriptive Module Title (targeting specific weakness)",
+            "description": "DETAILED 3-5 sentence description explaining: (1) What concepts are covered, (2) **Which WEAKNESS this addresses**, (3) Why they're important for career growth, (4) Real-world applications, (5) Industry relevance. Be SPECIFIC with technology names and concepts.",
             "duration_weeks": 2,
+            "targets_weakness": "Specific weakness from assessment (e.g., 'Async Programming', 'Database Design')",
             "topics": ["Specific Topic 1 with details", "Topic 2: Subtopic A and B", "Advanced Topic 3", "etc..."],
             "learning_objectives": [
                 "Specific, measurable objective 1 with technical detail",
-                "Objective 2 that addresses a weakness",
+                "Objective 2 that addresses THE WEAKNESS",
                 "Objective 3 with real-world application"
             ],
             "practical_exercises": [
@@ -327,7 +374,7 @@ Return as JSON:
             "weekly_breakdown": [
                 {{
                     "week": 1,
-                    "theme": "Specific weekly theme",
+                    "theme": "Specific weekly theme FROM WEAKNESS LIST",
                     "focus_area": "Primary skill/weakness being addressed this week",
                     "why_this_week": "2-3 sentence justification: How this week's content addresses specific student weaknesses and aligns with market trends. Connect to their assessment results.",
                     "goals": ["Detailed learning goal 1", "Goal 2 with technical specifics", "Goal 3"],
@@ -375,6 +422,14 @@ Return as JSON:
     async def _resource_curation_node(self, state: LearningPlanState) -> LearningPlanState:
         """Node 5: Curate specific learning resources for each module"""
         logger.info("Curating learning resources")
+        
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'resources',
+                'message': '📌 Curating best learning resources (courses, tutorials, videos)...',
+                'progress': 70
+            })
         
         all_resources = []
         
@@ -433,6 +488,14 @@ Return as JSON:
     async def _project_generation_node(self, state: LearningPlanState) -> LearningPlanState:
         """Node 6: Generate hands-on project ideas"""
         logger.info("Generating project ideas")
+        
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'projects',
+                'message': '🛠️ Creating hands-on project ideas for your portfolio...',
+                'progress': 85
+            })
         
         # Extract student weaknesses for targeted project design
         skill_gaps_raw = state.get('skill_gaps', [])[:8]
@@ -538,6 +601,14 @@ Return as JSON:
         """Node 8: Assemble final learning plan"""
         logger.info("Assembling final learning plan")
         
+        # Emit progress update
+        if state.get('progress_callback'):
+            await state['progress_callback']({
+                'stage': 'assembly',
+                'message': '✨ Finalizing your personalized learning roadmap...',
+                'progress': 95
+            })
+        
         try:
             # Convert to final schema format
             learning_modules = []
@@ -637,7 +708,8 @@ Return as JSON:
         experience_level: str,
         strengths: List[str],
         weaknesses: List[str],
-        overall_score: int
+        overall_score: int,
+        progress_callback=None
     ) -> Dict[str, Any]:
         """
         Main entry point for generating comprehensive learning plans.
@@ -648,6 +720,7 @@ Return as JSON:
             strengths: List of user's strength areas
             weaknesses: List of areas needing improvement
             overall_score: Assessment score out of 100
+            progress_callback: Optional async callback for progress updates
             
         Returns:
             Comprehensive learning plan dictionary
@@ -671,7 +744,8 @@ Return as JSON:
             project_ideas=[],
             resources=[],
             learning_plan={},
-            error=""
+            error="",
+            progress_callback=progress_callback
         )
         
         try:

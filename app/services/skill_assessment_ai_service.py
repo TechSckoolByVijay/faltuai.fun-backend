@@ -49,6 +49,8 @@ class SkillAssessmentAIService:
           "questions": [
             {
               "question": "Question text here",
+              "question_type": "multiple_choice|scenario_based",
+              "scenario_context": "Optional context for scenario questions",
               "options": ["Option A", "Option B", "Option C", "Option D"],
               "difficulty": "easy|medium|hard",
               "category": "subcategory of the topic"
@@ -74,11 +76,18 @@ class SkillAssessmentAIService:
                     for j, opt in enumerate(q_data.get("options", []))
                 ]
                 
+                # Determine question type
+                from app.schemas.skill_assessment import QuestionType
+                q_type_str = q_data.get("question_type", "multiple_choice")
+                question_type = QuestionType.SCENARIO_BASED if "scenario" in q_type_str.lower() else QuestionType.MULTIPLE_CHOICE
+                
                 question = QuizQuestionResponse(
                     id=i + 1,  # Temporary ID, will be replaced with DB ID
                     question_text=q_data.get("question", ""),
                     options=options,
                     difficulty_level=self._map_to_difficulty_level(q_data.get("difficulty", "medium")),
+                    question_type=question_type,
+                    scenario_context=q_data.get("scenario_context"),
                     question_order=i + 1
                 )
                 questions.append(question)
@@ -140,7 +149,8 @@ class SkillAssessmentAIService:
         self,
         topic: str,
         evaluation: EvaluationSummary,
-        user_experience_level: ExperienceLevel
+        user_experience_level: ExperienceLevel,
+        progress_callback=None
     ) -> LearningPlanResponse:
         """
         Generate comprehensive personalized learning plan using LangGraph agent.
@@ -165,7 +175,8 @@ class SkillAssessmentAIService:
                 experience_level=experience_level_str,
                 strengths=strengths,
                 weaknesses=weaknesses,
-                overall_score=overall_score
+                overall_score=overall_score,
+                progress_callback=progress_callback
             )
             
             # Convert plan data to response schema
@@ -280,33 +291,55 @@ class SkillAssessmentAIService:
     def _build_quiz_generation_prompt(self, topic: str, experience_level: ExperienceLevel, num_questions: int) -> str:
         """Build prompt for quiz question generation"""
         experience_level_str = experience_level.value if hasattr(experience_level, 'value') else experience_level
+        
+        scenario_count = max(3, int(num_questions * 0.35))  # 35% scenario-based questions
+        mc_count = num_questions - scenario_count
+        
         return f"""
-Generate {num_questions} quiz questions for assessing {topic} skills.
+Generate {num_questions} quiz questions for assessing {topic} skills ({mc_count} multiple choice + {scenario_count} scenario-based).
 Experience Level: {experience_level_str}
 
 Requirements:
 - Mix of fundamentals, practical scenarios, and current trends
 - Questions should be specific to {topic} domain
 - Include both conceptual and practical questions
-- For {experience_level_str} level: 
-  - Beginner: Focus on basics, definitions, simple concepts
-  - Intermediate: Include problem-solving, tools, best practices  
-  - Advanced: Complex scenarios, architecture, optimization, leadership
 
-- Provide 4 multiple choice options per question
-- Include difficulty level for each question (easy/medium/hard)
-- Questions should test real-world application, not just theory
+QUESTION TYPES:
+1. MULTIPLE CHOICE ({mc_count} questions):
+   - Traditional questions testing knowledge, concepts, tools
+   - 4 answer options each
+   - Direct and clear
+
+2. SCENARIO-BASED ({scenario_count} questions):
+   - Present a realistic work scenario/problem
+   - Test practical application and decision-making
+   - 4 solution approaches as options
+   - Example: "You're building a REST API and need to handle 10,000 requests/second. Which approach would you use?"
+
+For {experience_level_str} level: 
+  - Beginner: Focus on basics, definitions, simple scenarios
+  - Intermediate: Include problem-solving, tools, real-world scenarios  
+  - Advanced: Complex scenarios, architecture decisions, optimization, trade-offs
 
 Return response as JSON array:
 [
   {{
     "question": "Question text here?",
+    "question_type": "multiple_choice" or "scenario_based",
+    "scenario_context": "Optional: Brief context for scenario questions (1-2 sentences)",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correct_answer": "Option B",
-    "difficulty": "medium",
-    "explanation": "Brief explanation of correct answer"
+    "difficulty": "easy|medium|hard",
+    "explanation": "Brief explanation of correct answer and why others are wrong"
   }}
 ]
+
+IMPORTANT:
+- Scenario questions should feel like real job situations
+- Make scenarios relevant to {topic} domain
+- Each scenario should test decision-making, not just recall
+- Include edge cases and common pitfalls
+- Questions should distinguish between theoretical knowledge and practical skills
 
 Focus on current industry trends and in-demand skills for {topic}.
 Make questions engaging and practical, not just theoretical.
@@ -316,9 +349,19 @@ Make questions engaging and practical, not just theoretical.
         """Build prompt for answer evaluation"""
         
         qa_pairs = []
+        unsure_count = 0
+        
         for i, (q, a) in enumerate(zip(questions, answers)):
+            user_answer = a.get('user_answer', '')
+            is_unsure = a.get('is_unsure', False) or user_answer == 'Not Sure'
+            
+            status = ""
+            if is_unsure:
+                status = " [NOT SURE - NEEDS TO LEARN THIS]"
+                unsure_count += 1
+            
             qa_pairs.append(f"Q{i+1}: {q.get('question_text', '')}")
-            qa_pairs.append(f"User Answer: {a.get('user_answer', '')}")
+            qa_pairs.append(f"User Answer: {user_answer}{status}")
             qa_pairs.append("---")
         
         qa_text = "\n".join(qa_pairs)
@@ -330,30 +373,45 @@ Evaluate this {topic} skill assessment for a {experience_level_str} level develo
 QUESTIONS AND ANSWERS:
 {qa_text}
 
+EVALUATION CONTEXT:
+- Total Questions: {len(questions)}
+- "Not Sure" Answers: {unsure_count} (indicate areas user needs to learn)
+
+CRITICAL EVALUATION RULES:
+1. **PRIORITIZE WEAKNESSES**: "Not Sure" and incorrect answers indicate the MOST IMPORTANT areas for learning
+2. **PENALIZE GAPS HEAVILY**: Each "Not Sure" answer should significantly impact the score for that skill area
+3. **IDENTIFY WEAK AREAS**: Focus on what the user DOESN'T know, not what they know
+4. **BE SPECIFIC**: Map each "Not Sure"/incorrect question to specific skill areas that need work
+
 Provide evaluation analysis as JSON:
 {{
   "overall_score": 75.5,
   "expertise_level": "intermediate",
-  "strengths": ["Area 1", "Area 2", "Area 3"],
-  "weaknesses": ["Area 1", "Area 2"],
+  "strengths": ["Area where user answered correctly"],
+  "weaknesses": ["PRIORITY: Specific topics from 'Not Sure' answers", "Areas from incorrect answers"],
+  "critical_gaps": ["Most important missing knowledge from 'Not Sure' answers"],
   "skill_areas": {{
-    "Fundamentals": {{"score": 80, "level": "good"}},
-    "Tools & Frameworks": {{"score": 70, "level": "intermediate"}},
-    "Best Practices": {{"score": 65, "level": "developing"}},
-    "Problem Solving": {{"score": 85, "level": "strong"}}
+    "Fundamentals": {{"score": 80, "level": "good", "missed_concepts": ["specific concept from 'Not Sure' Q"]}},
+    "Tools & Frameworks": {{"score": 40, "level": "needs work", "missed_concepts": ["tool1", "tool2"]}},
+    "Best Practices": {{"score": 65, "level": "developing", "missed_concepts": []}},
+    "Problem Solving": {{"score": 85, "level": "strong", "missed_concepts": []}}
   }},
-  "detailed_feedback": "Overall analysis of performance...",
-  "next_steps": ["Specific recommendation 1", "Specific recommendation 2"]
+  "detailed_feedback": "Overall analysis with EMPHASIS on gaps revealed by 'Not Sure' answers...",
+  "next_steps": ["Focus on [specific topic from 'Not Sure' Q1]", "Learn [specific skill from 'Not Sure' Q2]"]
 }}
 
 Consider:
-- Depth of understanding shown in answers
+- **WEIGHT "NOT SURE" ANSWERS HEAVILY**: They reveal critical knowledge gaps where user needs learning
+- "Not Sure" indicates user honestly doesn't know - prioritize these topics
+- Incorrect answers may indicate misconceptions that also need addressing
+- Depth of understanding shown in confident, correct answers
 - Practical vs theoretical knowledge
 - Current market relevance of skills demonstrated
-- Areas for immediate improvement
+- Areas for IMMEDIATE improvement ("Not Sure" topics)
 - Readiness for next skill level
 
-Be constructive but honest in assessment.
+**IMPORTANT**: The learning plan will focus PRIMARILY on weaknesses. Be thorough in identifying gaps.
+Be constructive but honest in assessment. User's time is valuable - focus on what they DON'T know.
 """
     
     def _build_learning_plan_prompt(self, topic: str, evaluation: EvaluationSummary, experience_level: ExperienceLevel) -> str:

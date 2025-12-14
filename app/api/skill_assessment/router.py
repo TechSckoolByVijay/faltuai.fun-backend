@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -6,6 +7,7 @@ from typing import List, Dict, Any
 import json
 import asyncio
 from datetime import datetime
+from queue import Queue
 
 # Local imports
 from app.core.database import get_db
@@ -201,6 +203,205 @@ async def submit_quiz_answers(
         logger.error(f"Error submitting quiz answers: {e}")
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to evaluate quiz answers")
+
+@router.get("/assessment/{assessment_id}/learning-plan-stream")
+async def stream_learning_plan_generation(
+    assessment_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Stream learning plan generation progress using Server-Sent Events (SSE).
+    Frontend listens to this for real-time updates during the 2-3 minute generation.
+    """
+    
+    # Create a queue for progress updates
+    progress_queue = asyncio.Queue()
+    
+    async def progress_callback(update: dict):
+        """Callback to queue progress updates"""
+        await progress_queue.put(update)
+    
+    async def generate_plan_task():
+        """Background task to generate plan and queue updates"""
+        try:
+            user_id = current_user.id
+            
+            # Send init progress
+            await progress_queue.put({
+                "stage": "init",
+                "message": "⏳ Starting learning plan generation...",
+                "progress": 5
+            })
+            
+            # Get assessment with evaluation
+            result = await db.execute(
+                select(SkillAssessment)
+                .options(selectinload(SkillAssessment.evaluation_result))
+                .filter(SkillAssessment.id == assessment_id, SkillAssessment.user_id == user_id)
+            )
+            assessment = result.scalar_one_or_none()
+            
+            if not assessment or not assessment.evaluation_result:
+                await progress_queue.put({"event": "error", "data": {"error": "Assessment not found"}})
+                return
+            
+            # Send market research progress
+            await progress_queue.put({
+                "stage": "market_research",
+                "message": f"🔍 Researching latest {assessment.topic} market trends and salary data...",
+                "progress": 10
+            })
+            
+            # Convert stored evaluation to schema
+            eval_result = assessment.evaluation_result
+            evaluation = EvaluationSummary(
+                assessment_id=assessment.id,
+                overall_score=eval_result.overall_score,
+                expertise_level=eval_result.expertise_level,
+                strengths=json.loads(eval_result.strengths),
+                weaknesses=json.loads(eval_result.weaknesses),
+                skill_breakdown=[]
+            )
+            
+            # Create a custom callback that sends to queue
+            async def send_progress(update: dict):
+                await progress_queue.put(update)
+            
+            # Send skill gaps progress
+            await progress_queue.put({
+                "stage": "skill_gaps",
+                "message": "📊 Analyzing your skill gaps and prioritizing learning areas...",
+                "progress": 25
+            })
+            
+            # Small delay to show progress
+            await asyncio.sleep(0.5)
+            
+            # Send objectives progress
+            await progress_queue.put({
+                "stage": "objectives",
+                "message": "🎯 Defining personalized learning objectives...",
+                "progress": 40
+            })
+            
+            await asyncio.sleep(0.5)
+            
+            # Send curriculum progress
+            await progress_queue.put({
+                "stage": "curriculum",
+                "message": "📚 Designing comprehensive curriculum with weekly breakdowns...",
+                "progress": 55
+            })
+            
+            # Generate learning plan with progress tracking
+            learning_plan = await ai_service.generate_learning_plan(
+                topic=assessment.topic,
+                evaluation=evaluation,
+                user_experience_level=assessment.experience_level,
+                progress_callback=send_progress
+            )
+            
+            # Send resources progress
+            await progress_queue.put({
+                "stage": "resources",
+                "message": "📌 Curating best learning resources (courses, tutorials, videos)...",
+                "progress": 70
+            })
+            
+            await asyncio.sleep(0.5)
+            
+            # Send projects progress
+            await progress_queue.put({
+                "stage": "projects",
+                "message": "🛠️ Creating hands-on project ideas for your portfolio...",
+                "progress": 85
+            })
+            
+            await asyncio.sleep(0.5)
+            
+            # Send assembly progress
+            await progress_queue.put({
+                "stage": "assembly",
+                "message": "✨ Finalizing your personalized learning roadmap...",
+                "progress": 95
+            })
+            
+            # Delete existing learning plan if exists
+            existing_plan = await db.execute(
+                select(LearningPlan).filter(LearningPlan.assessment_id == assessment.id)
+            )
+            existing = existing_plan.scalar_one_or_none()
+            if existing:
+                await db.delete(existing)
+                await db.commit()
+            
+            # Save learning plan to database
+            plan_content = {
+                "learning_modules": [mod.dict() for mod in learning_plan.learning_modules],
+                "project_ideas": [proj.dict() for proj in learning_plan.project_ideas],
+                "market_trends": [trend.dict() for trend in learning_plan.market_trends],
+                "learning_resources": [res.dict() for res in learning_plan.learning_resources] if hasattr(learning_plan, 'learning_resources') else [],
+                "career_progression": learning_plan.career_progression if hasattr(learning_plan, 'career_progression') else None,
+                "market_research_insights": learning_plan.market_research_insights if hasattr(learning_plan, 'market_research_insights') else None
+            }
+            
+            db_learning_plan = LearningPlan(
+                assessment_id=assessment.id,
+                plan_content=json.dumps(plan_content),
+                timeline_weeks=learning_plan.timeline_weeks,
+                priority_skills=json.dumps(learning_plan.priority_skills),
+                recommended_resources=json.dumps([]),
+                project_ideas=json.dumps([]),
+                market_trends=json.dumps([])
+            )
+            
+            db.add(db_learning_plan)
+            await db.commit()
+            await db.refresh(db_learning_plan)
+            
+            # Send completion event
+            await progress_queue.put({
+                "event": "complete",
+                "data": {"message": "\u2705 Learning plan generated successfully!", "plan_id": db_learning_plan.id}
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generating learning plan: {e}")
+            await progress_queue.put({"event": "error", "data": {"error": str(e)}})
+        finally:
+            await progress_queue.put(None)  # Signal completion
+    
+    async def event_stream():
+        """Stream SSE events from the queue"""
+        # Start background task
+        task = asyncio.create_task(generate_plan_task())
+        
+        # Send initial progress
+        yield f"event: progress\\ndata: {{\"stage\": \"init\", \"message\": \"\u23f3 Starting learning plan generation...\", \"progress\": 5}}\\n\\n"
+        
+        # Stream queued updates
+        while True:
+            update = await progress_queue.get()
+            if update is None:  # Task completed
+                break
+            
+            event = update.get("event", "progress")
+            data = json.dumps(update.get("data", update))
+            yield f"event: {event}\\ndata: {data}\\n\\n"
+        
+        # Wait for task to finish
+        await task
+    
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 @router.post("/assessment/{assessment_id}/learning-plan", response_model=LearningPlanResponse)
 async def generate_learning_plan(

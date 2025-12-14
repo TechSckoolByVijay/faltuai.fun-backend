@@ -14,6 +14,10 @@ class DifficultyLevel(str, Enum):
     MEDIUM = "medium"
     HARD = "hard"
 
+class QuestionType(str, Enum):
+    MULTIPLE_CHOICE = "multiple_choice"
+    SCENARIO_BASED = "scenario_based"
+
 class ExpertiseLevel(str, Enum):
     NOVICE = "novice"
     BEGINNER = "beginner"
@@ -33,8 +37,9 @@ class QuizSubmissionRequest(BaseModel):
         schema_extra = {
             "example": {
                 "answers": [
-                    {"question_id": 1, "user_answer": "Option A", "time_taken": 30},
-                    {"question_id": 2, "user_answer": "Multiple correct answers", "time_taken": 45}
+                    {"question_id": 1, "user_answer": "Option A", "time_taken": 30, "is_skipped": False, "is_unsure": False},
+                    {"question_id": 2, "user_answer": "Not Sure", "time_taken": 15, "is_skipped": False, "is_unsure": True},
+                    {"question_id": 3, "user_answer": "SKIPPED", "time_taken": 5, "is_skipped": True, "is_unsure": False}
                 ]
             }
         }
@@ -49,6 +54,8 @@ class QuizQuestionResponse(BaseModel):
     question_text: str = Field(..., description="Question content")
     options: List[QuizOption] = Field(..., description="Answer options")
     difficulty_level: DifficultyLevel = Field(..., description="Question difficulty")
+    question_type: QuestionType = Field(default=QuestionType.MULTIPLE_CHOICE, description="Type of question")
+    scenario_context: Optional[str] = Field(None, description="Context for scenario-based questions")
     question_order: int = Field(..., description="Question sequence number")
 
 class AssessmentStartResponse(BaseModel):
