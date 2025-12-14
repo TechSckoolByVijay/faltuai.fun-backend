@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "FaltuAI Database",
+      "Group": "Servers",
+      "Port": 5432,
+      "Username": "faltuai_user", 
+      "Host": "database",
+      "SSLMode": "prefer",
+      "MaintenanceDB": "faltuai_db",
+      "PassFile": "/tmp/pgpassfile"
+    }
+  }
+}

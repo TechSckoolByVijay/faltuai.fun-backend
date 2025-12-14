@@ -1,0 +1,105 @@
+services:
+  # FastAPI Backend Service
+  backend:
+    build: ./backend
+    container_name: fastapi-backend
+    ports:
+      - "8000:8000"
+    environment:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-google-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-google-secret}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dummysecret}
+      DEBUG: ${DEBUG:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-3.5-turbo}
+      # LangChain and LangSmith configuration
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-true}
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
+      LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT:-faltuai-fun}
+      LANGCHAIN_ENDPOINT: ${LANGCHAIN_ENDPOINT:-https://api.smith.langchain.com}
+      # Azure and Database configuration
+      AZURE_DOC_INTELLIGENCE_ENDPOINT: ${AZURE_DOC_INTELLIGENCE_ENDPOINT}
+      AZURE_DOC_INTELLIGENCE_KEY: ${AZURE_DOC_INTELLIGENCE_KEY}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-faltuai_user}:${POSTGRES_PASSWORD:-faltuai_password}@database:5432/${POSTGRES_DB:-faltuai_db}
+      ASYNC_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-faltuai_user}:${POSTGRES_PASSWORD:-faltuai_password}@database:5432/${POSTGRES_DB:-faltuai_db}
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # PostgreSQL Database Service
+  database:
+    image: postgres:16
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-faltuai_db}
+      POSTGRES_USER: ${POSTGRES_USER:-faltuai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-faltuai_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-faltuai_user} -d ${POSTGRES_DB:-faltuai_db}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # pgAdmin Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-web
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@faltuai.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./database/pgadmin:/pgadmin4/servers.json
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+
+  # React Frontend Service  
+  frontend:
+    build: ./frontend
+    container_name: react-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:8000}
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - database
+
+# Volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# Optional: Add networks for better container communication
+networks:
+  default:
+    name: faltuai-network
