@@ -618,10 +618,11 @@ Return as JSON:
                 'priority_skills': state['priority_skills'],
                 'project_ideas': project_ideas,
                 'market_trends': market_trends,
-                'learning_resources': state['resources']
+                'learning_resources': state['resources'],
+                'market_research_insights': state.get('market_research', {})
             }
             
-            logger.info("Final learning plan assembled successfully")
+            logger.info("Final learning plan assembled successfully with market research insights")
             
         except Exception as e:
             logger.error(f"Final assembly failed: {e}")
