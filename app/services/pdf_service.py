@@ -168,6 +168,168 @@ class PDFService:
                 story.append(Paragraph(f"• {skill}", self.styles['Normal']))
             story.append(Spacer(1, 15))
         
+        # Market Research Insights - NEW SECTION
+        if market_research:
+            story.append(PageBreak())  # New page for market insights
+            story.append(Paragraph("📊 <b>Live Market Intelligence</b>", self.styles['CustomSubtitle']))
+            story.append(Paragraph("Real data from Serper, GitHub, YouTube & HackerNews APIs", self.styles['Normal']))
+            story.append(Spacer(1, 20))
+            
+            # Job Market Demand
+            market_demand = market_research.get('market_demand', {})
+            if market_demand:
+                story.append(Paragraph("🔥 <b>Job Market Demand</b>", self.styles['SectionHeader']))
+                story.append(Spacer(1, 10))
+                
+                if market_demand.get('job_postings_analyzed'):
+                    story.append(Paragraph(
+                        f"<b>Active Job Postings:</b> {market_demand['job_postings_analyzed']:,}+ positions analyzed",
+                        self.styles['Normal']
+                    ))
+                
+                if market_demand.get('remote_work_percentage'):
+                    story.append(Paragraph(
+                        f"<b>Remote Work:</b> {market_demand['remote_work_percentage']}% of positions offer remote work",
+                        self.styles['Normal']
+                    ))
+                
+                if market_demand.get('google_search_results'):
+                    story.append(Paragraph(
+                        f"<b>Search Results:</b> {market_demand['google_search_results']:,}+ results (Serper API)",
+                        self.styles['Normal']
+                    ))
+                
+                # Top required skills
+                required_skills = market_demand.get('required_skills', [])
+                if required_skills:
+                    story.append(Spacer(1, 10))
+                    story.append(Paragraph("<b>🎯 Top Skills in Job Postings:</b>", self.styles['Normal']))
+                    skills_text = ', '.join(required_skills[:10])
+                    story.append(Paragraph(f"   {skills_text}", self.styles['Normal']))
+                
+                # Salary mentions
+                salary_mentions = market_demand.get('salary_mentions', [])
+                if salary_mentions:
+                    story.append(Spacer(1, 10))
+                    story.append(Paragraph("<b>💰 Salary Insights (Real Data):</b>", self.styles['Normal']))
+                    for mention in salary_mentions[:3]:
+                        if isinstance(mention, dict):
+                            salary = mention.get('salary_mention', [])
+                            if isinstance(salary, list):
+                                salary = ' - '.join(salary)
+                            story.append(Paragraph(f"   • {salary}", self.styles['Normal']))
+                        else:
+                            story.append(Paragraph(f"   • {mention}", self.styles['Normal']))
+                
+                story.append(Spacer(1, 15))
+            
+            # GitHub Technology Adoption
+            skill_gaps = market_research.get('skill_gaps', {})
+            if skill_gaps:
+                story.append(Paragraph("⭐ <b>Technology Adoption (GitHub Metrics)</b>", self.styles['SectionHeader']))
+                story.append(Spacer(1, 10))
+                
+                if skill_gaps.get('github_total_repos'):
+                    story.append(Paragraph(
+                        f"<b>GitHub Repositories:</b> {skill_gaps['github_total_repos']:,}+ active repositories",
+                        self.styles['Normal']
+                    ))
+                
+                if skill_gaps.get('github_total_stars'):
+                    story.append(Paragraph(
+                        f"<b>Total Stars:</b> {skill_gaps['github_total_stars']:,}+ community endorsements",
+                        self.styles['Normal']
+                    ))
+                
+                # Popular repositories
+                popular_repos = skill_gaps.get('popular_repositories', [])
+                if popular_repos:
+                    story.append(Spacer(1, 10))
+                    story.append(Paragraph("<b>🌟 Trending Repositories to Study:</b>", self.styles['Normal']))
+                    for repo in popular_repos[:5]:
+                        if isinstance(repo, dict):
+                            name = repo.get('name', 'N/A')
+                            stars = repo.get('stars', 0)
+                            story.append(Paragraph(f"   • {name} (⭐ {stars:,} stars)", self.styles['Normal']))
+                
+                # Emerging technologies
+                emerging_tech = skill_gaps.get('emerging_technologies', [])
+                if emerging_tech:
+                    story.append(Spacer(1, 10))
+                    story.append(Paragraph("<b>🚀 Emerging Technologies:</b>", self.styles['Normal']))
+                    tech_text = ', '.join(emerging_tech[:8])
+                    story.append(Paragraph(f"   {tech_text}", self.styles['Normal']))
+                
+                story.append(Spacer(1, 15))
+            
+            # YouTube Learning Resources
+            learning_resources_stats = market_research.get('learning_resources', {})
+            if learning_resources_stats:
+                story.append(Paragraph("📺 <b>Learning Content Available (YouTube Analytics)</b>", self.styles['SectionHeader']))
+                story.append(Spacer(1, 10))
+                
+                if learning_resources_stats.get('youtube_videos_found'):
+                    story.append(Paragraph(
+                        f"<b>Tutorial Videos:</b> {learning_resources_stats['youtube_videos_found']:,}+ videos available",
+                        self.styles['Normal']
+                    ))
+                
+                if learning_resources_stats.get('total_views'):
+                    views_millions = learning_resources_stats['total_views'] / 1000000
+                    story.append(Paragraph(
+                        f"<b>Total Views:</b> {views_millions:.1f}M+ community engagement",
+                        self.styles['Normal']
+                    ))
+                
+                if learning_resources_stats.get('average_rating'):
+                    story.append(Paragraph(
+                        f"<b>Average Rating:</b> {learning_resources_stats['average_rating']}/5 stars",
+                        self.styles['Normal']
+                    ))
+                
+                story.append(Spacer(1, 15))
+            
+            # Career Path & Salary Trends
+            career_paths = market_research.get('career_paths', {})
+            if career_paths and career_paths.get('real_salary_data'):
+                story.append(Paragraph("💼 <b>Career Path & Salary Trends</b>", self.styles['SectionHeader']))
+                story.append(Spacer(1, 10))
+                story.append(Paragraph("<b>💰 Real Salary Data (from job postings):</b>", self.styles['Normal']))
+                
+                for data in career_paths['real_salary_data'][:5]:
+                    if isinstance(data, dict):
+                        title = data.get('title', data.get('role', 'N/A'))
+                        salary = data.get('salary_mention', [])
+                        if isinstance(salary, list):
+                            salary = ' - '.join(salary)
+                        story.append(Paragraph(f"   • {title}: {salary}", self.styles['Normal']))
+                
+                story.append(Spacer(1, 15))
+            
+            # Industry Trends
+            tech_trends = market_research.get('tech_trends', {})
+            if tech_trends and tech_trends.get('news_articles'):
+                story.append(Paragraph("📰 <b>Latest Industry Trends (News & Discussions)</b>", self.styles['SectionHeader']))
+                story.append(Spacer(1, 10))
+                
+                for article in tech_trends['news_articles'][:5]:
+                    if isinstance(article, dict):
+                        title = article.get('title', 'N/A')
+                        date = article.get('date', '')
+                        story.append(Paragraph(f"   • {title} ({date})", self.styles['Normal']))
+                
+                story.append(Spacer(1, 15))
+            
+            # Data source attribution
+            story.append(Spacer(1, 10))
+            story.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(
+                "✅ Data Sources: Serper API (Google Search) • GitHub API • YouTube Data API v3 • HackerNews API",
+                self.styles['Normal']
+            ))
+            story.append(Spacer(1, 20))
+        
         # Learning modules with their weekly breakdown
         learning_modules = learning_plan.get('learning_modules', [])
         if learning_modules:
