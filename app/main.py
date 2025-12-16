@@ -11,9 +11,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, Request, HTTPException, File, Form, UploadFile, Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 import uvicorn
 import asyncio
 
@@ -24,6 +26,7 @@ from app.auth.tokens import token_manager
 from app.api.resume_roast.router import router as resume_roast_router
 from app.api.newsletter.router import router as newsletter_router
 from app.api.skill_assessment.router import router as skill_assessment_router
+from app.api.stock_analysis.router import router as stock_analysis_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
@@ -40,6 +43,16 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
+
+# Add validation error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"Validation error for {request.url}: {exc.errors()}")
+    logger.error(f"Request body: {await request.body()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(await request.body())}
+    )
 
 # Add CORS middleware
 app.add_middleware(
@@ -81,6 +94,7 @@ async def shutdown_event():
 app.include_router(resume_roast_router, prefix="/api/v1")
 app.include_router(newsletter_router, prefix="/api/v1")
 app.include_router(skill_assessment_router, prefix="/api/v1")
+app.include_router(stock_analysis_router, prefix="/api/v1")
 
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
