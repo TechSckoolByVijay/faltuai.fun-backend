@@ -1,7 +1,7 @@
 """add_billing_cycle_and_pricing_url
 
 Revision ID: a7ff7ed5c8c4
-Revises: add_user_subscriptions
+Revises: b799a4546a0d
 Create Date: 2025-12-14 09:16:09.545201
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'a7ff7ed5c8c4'
-down_revision: Union[str, None] = 'add_user_subscriptions'
+down_revision: Union[str, None] = 'b799a4546a0d'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

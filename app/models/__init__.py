@@ -11,6 +11,7 @@ from .skill_assessment import (
     SkillEvaluationResult, 
     LearningPlan
 )
+from .stock_analysis import StockAnalysis, StockAnalysisCache
 
 __all__ = [
     "User",
@@ -23,4 +24,6 @@ __all__ = [
     "QuizAnswer", 
     "SkillEvaluationResult",
     "LearningPlan",
+    "StockAnalysis",
+    "StockAnalysisCache",
 ]
