@@ -141,6 +141,9 @@ jobs:
           azcliversion: 2.30.0
           inlineScript: |
             echo "🔍 Verifying Container App deployment..."
+
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az extension add --name containerapp --upgrade --allow-preview true
             
             # Get app status
             APP_STATUS=$(az containerapp show \
