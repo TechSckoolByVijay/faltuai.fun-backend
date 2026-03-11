@@ -109,7 +109,7 @@ jobs:
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.RESOURCE_GROUP }} \
-              --replace-env-vars \
+              --set-env-vars \
                 POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
                 POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
                 POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
