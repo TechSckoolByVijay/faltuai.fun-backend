@@ -2,27 +2,48 @@
 Database configuration module for SQLAlchemy with PostgreSQL
 """
 import os
+import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import MetaData
 from typing import AsyncGenerator
+from urllib.parse import urlparse
+
+
+logger = logging.getLogger(__name__)
 
 # Database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://faltuai_user:faltuai_password@localhost:5432/faltuai_db")
 
+def _normalize_async_database_url(database_url: str, explicit_async_url: str | None) -> str:
+    """Normalize DB URL for SQLAlchemy asyncpg, including Azure SSL query params."""
+    async_url = explicit_async_url or database_url
+
+    if async_url.startswith("postgresql://"):
+        async_url = async_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    if "sslmode=require" in async_url:
+        async_url = async_url.replace("sslmode=require", "ssl=require")
+
+    return async_url
+
+
 # Use explicit ASYNC_DATABASE_URL if provided, otherwise convert from DATABASE_URL
-ASYNC_DATABASE_URL = os.getenv("ASYNC_DATABASE_URL")
-if not ASYNC_DATABASE_URL:
-    # Convert to async URL if needed and fix SSL parameters for asyncpg
-    if DATABASE_URL.startswith("postgresql://"):
-        ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-        # Fix SSL parameter for asyncpg
-        ASYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace("sslmode=require", "ssl=require")
-    else:
-        ASYNC_DATABASE_URL = DATABASE_URL
-        # Fix SSL parameter for asyncpg if present
-        if "sslmode=require" in ASYNC_DATABASE_URL:
-            ASYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace("sslmode=require", "ssl=require")
+ASYNC_DATABASE_URL = _normalize_async_database_url(
+    database_url=DATABASE_URL,
+    explicit_async_url=os.getenv("ASYNC_DATABASE_URL")
+)
+
+try:
+    parsed_db_url = urlparse(ASYNC_DATABASE_URL)
+    logger.info(
+        "Database config loaded (host=%s, db=%s, async_url=%s)",
+        parsed_db_url.hostname,
+        parsed_db_url.path.lstrip("/") if parsed_db_url.path else "",
+        bool(os.getenv("ASYNC_DATABASE_URL")),
+    )
+except Exception:
+    logger.warning("Database config loaded, but URL parsing failed")
 
 # SQLAlchemy async engine
 engine = create_async_engine(
