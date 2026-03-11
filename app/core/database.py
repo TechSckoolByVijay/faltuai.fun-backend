@@ -17,7 +17,13 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://faltuai_user:faltuai_pass
 
 def _normalize_async_database_url(database_url: str, explicit_async_url: str | None) -> str:
     """Normalize DB URL for SQLAlchemy asyncpg, including Azure SSL query params."""
-    async_url = explicit_async_url or database_url
+    # Treat empty string the same as None (happens when GitHub secret is unset)
+    async_url = (explicit_async_url or "").strip() or database_url
+
+    if not async_url:
+        raise ValueError(
+            "No database URL configured. Set DATABASE_URL or ASYNC_DATABASE_URL environment variable."
+        )
 
     if async_url.startswith("postgresql://"):
         async_url = async_url.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -28,7 +34,7 @@ def _normalize_async_database_url(database_url: str, explicit_async_url: str | N
     return async_url
 
 
-# Use explicit ASYNC_DATABASE_URL if provided, otherwise convert from DATABASE_URL
+# Use explicit ASYNC_DATABASE_URL if provided (non-empty), otherwise convert from DATABASE_URL
 ASYNC_DATABASE_URL = _normalize_async_database_url(
     database_url=DATABASE_URL,
     explicit_async_url=os.getenv("ASYNC_DATABASE_URL")
