@@ -94,7 +94,7 @@ jobs:
             
             # Set DB URLs separately using --set-env-vars (merge, not replace) only when secrets exist.
             # --replace-env-vars below does NOT include DB URLs to avoid wiping them when secrets are unset.
-            if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+            if [ -n "${{ secrets.DATABASE_URL }}" ] && [ -n "${{ secrets.ASYNC_DATABASE_URL }}" ]; then
               echo "🔑 Setting DB URLs from secrets..."
               az containerapp update \
                 --name ${{ env.CONTAINER_APP_NAME }} \
@@ -103,7 +103,7 @@ jobs:
                   "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
                   "ASYNC_DATABASE_URL=${{ secrets.ASYNC_DATABASE_URL }}"
             else
-              echo "⚠️  DATABASE_URL secret not set — preserving existing DB env vars in container app"
+              echo "⚠️  DATABASE_URL or ASYNC_DATABASE_URL secret not set — preserving existing DB env vars in container app"
             fi
             
             az containerapp update \
