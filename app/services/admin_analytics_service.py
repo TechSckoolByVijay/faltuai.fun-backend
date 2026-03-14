@@ -32,10 +32,6 @@ class AdminAnalyticsService:
             "label": "Skill Assessment",
             "activity_types": ["skill_assessment_start", "skill_assessment_submit"],
         },
-        "stock_analysis": {
-            "label": "Stock Analysis",
-            "activity_types": ["stock_analysis_create"],
-        },
         "email_smoothener": {
             "label": "Email Smoothener",
             "activity_types": ["esm_smoothen"],

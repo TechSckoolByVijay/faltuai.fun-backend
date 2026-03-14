@@ -58,7 +58,6 @@ backend/
 │   ├── api/                        # API route definitions
 │   │   ├── resume_roast/          # Resume roasting endpoints
 │   │   │   └── router.py          # Resume roast API routes
-│   │   ├── stock_analysis/        # Stock analysis endpoints
 │   │   │   └── router.py
 │   │   ├── newsletter/            # Newsletter endpoints
 │   │   │   └── router.py
