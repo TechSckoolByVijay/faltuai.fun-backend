@@ -90,7 +90,7 @@ async def init_db():
     Initialize database - create tables
     """
     # Import all models to ensure they are registered with Base.metadata
-    from app.models import User, ResumeRoastSession, UserActivityLog, SystemMetrics
+    from app.models import User, ResumeRoastSession, UserActivityLog, SystemMetrics, EmailSmoothenerSession
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

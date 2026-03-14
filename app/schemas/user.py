@@ -23,6 +23,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     is_premium: Optional[bool] = None
+    is_super_user: Optional[bool] = None
 
 class User(UserBase):
     """
@@ -32,6 +33,7 @@ class User(UserBase):
     google_id: str
     is_active: bool = True
     is_premium: bool = False
+    is_super_user: bool = False
     created_at: datetime
     last_login: Optional[datetime] = None
     
@@ -58,6 +60,7 @@ class TokenData(BaseModel):
     """
     email: Optional[str] = None
     name: Optional[str] = None
+    is_super_user: bool = False
 
 # Export schemas
 __all__ = [

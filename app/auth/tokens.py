@@ -82,7 +82,12 @@ class TokenManager:
             )
     
     @staticmethod
-    def create_dummy_token(email: str, name: str = "Test User") -> str:
+    def create_dummy_token(
+        email: str,
+        name: str = "Test User",
+        user_id: Optional[int] = None,
+        is_super_user: bool = False
+    ) -> str:
         """
         Create a dummy JWT token for testing purposes
         
@@ -97,6 +102,8 @@ class TokenManager:
             "sub": email,  # Subject (user email)
             "name": name,
             "email": email,
+            "user_id": user_id,
+            "is_super_user": is_super_user,
             "iat": datetime.utcnow(),  # Issued at
             "type": "access_token"
         }

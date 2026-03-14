@@ -23,6 +23,7 @@ from app.schemas.stock_analysis import (
 )
 from app.services.stock_analysis_service import stock_analysis_service
 from app.services.database.stock_analysis_service import stock_analysis_db_service
+from app.services.database.resume_roast_service import ResumeRoastDatabaseService
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,21 @@ async def create_stock_analysis(
             user_question=request.user_question,
             stock_symbol=request.stock_symbol,
             stock_name=request.stock_name
+        )
+
+        await ResumeRoastDatabaseService.log_user_activity(
+            db=db,
+            user_id=current_user.id,
+            activity_type="stock_analysis_create",
+            endpoint="/api/v1/stock-analysis/analyze",
+            request_data={
+                "user_question": request.user_question,
+                "stock_symbol": request.stock_symbol,
+                "stock_name": request.stock_name,
+            },
+            response_status="success",
+            ip_address=raw_request.client.host if raw_request.client else None,
+            user_agent=raw_request.headers.get("user-agent"),
         )
         
         # Trigger background analysis

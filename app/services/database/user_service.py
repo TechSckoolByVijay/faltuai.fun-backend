@@ -31,7 +31,8 @@ class UserService:
             avatar_url=user_data.avatar_url,
             google_id=user_data.google_id,
             is_active=True,
-            is_premium=False
+            is_premium=False,
+            is_super_user=False
         )
         
         db.add(db_user)

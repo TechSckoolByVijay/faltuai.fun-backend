@@ -33,6 +33,7 @@ from app.schemas.skill_assessment import (
     ExperienceLevel
 )
 from app.services.skill_assessment_ai_service import SkillAssessmentAIService
+from app.services.database.resume_roast_service import ResumeRoastDatabaseService
 
 import logging
 logger = logging.getLogger(__name__)
@@ -106,6 +107,19 @@ async def start_assessment(
                 question_order=db_q.question_order
             ))
         
+        await ResumeRoastDatabaseService.log_user_activity(
+            db=db,
+            user_id=user_id,
+            activity_type="skill_assessment_start",
+            endpoint="/api/v1/skill-assessment/start",
+            request_data={
+                "topic": request.topic,
+                "experience_level": request.experience_level.value,
+                "total_questions": len(questions_response),
+            },
+            response_status="success",
+        )
+
         return AssessmentStartResponse(
             assessment_id=assessment.id,
             topic=assessment.topic,
@@ -196,6 +210,19 @@ async def submit_quiz_answers(
         
         # Update evaluation with assessment ID
         evaluation.assessment_id = assessment_id
+
+        await ResumeRoastDatabaseService.log_user_activity(
+            db=db,
+            user_id=user_id,
+            activity_type="skill_assessment_submit",
+            endpoint=f"/api/v1/skill-assessment/assessment/{assessment_id}/submit",
+            request_data={
+                "topic": assessment.topic,
+                "answers_count": len(request.answers),
+                "overall_score": evaluation.overall_score,
+            },
+            response_status="success",
+        )
         
         return evaluation
         

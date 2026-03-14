@@ -64,6 +64,7 @@ async def get_current_user(
             google_id=db_user.google_id,
             is_active=db_user.is_active,
             is_premium=db_user.is_premium,
+            is_super_user=db_user.is_super_user,
             created_at=db_user.created_at,
             last_login=db_user.last_login
         )
@@ -98,6 +99,18 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
         )
     return current_user
 
+
+async def get_current_super_user(current_user: User = Depends(get_current_active_user)) -> User:
+    """
+    Ensure current user has super-user privileges.
+    """
+    if not current_user.is_super_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super user access required"
+        )
+    return current_user
+
 async def optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -125,6 +138,7 @@ async def optional_current_user(
 __all__ = [
     "get_current_user", 
     "get_current_active_user", 
+    "get_current_super_user",
     "optional_current_user",
     "security"
 ]

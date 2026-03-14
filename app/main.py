@@ -27,6 +27,9 @@ from app.api.resume_roast.router import router as resume_roast_router
 from app.api.newsletter.router import router as newsletter_router
 from app.api.skill_assessment.router import router as skill_assessment_router
 from app.api.stock_analysis.router import router as stock_analysis_router
+from app.api.v1.endpoints.cringe_meter import router as cringe_meter_router
+from app.api.admin.router import router as admin_router
+from app.api.email_smoothener.router import router as email_smoothener_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
@@ -95,6 +98,9 @@ app.include_router(resume_roast_router, prefix="/api/v1")
 app.include_router(newsletter_router, prefix="/api/v1")
 app.include_router(skill_assessment_router, prefix="/api/v1")
 app.include_router(stock_analysis_router, prefix="/api/v1")
+app.include_router(cringe_meter_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
+app.include_router(email_smoothener_router, prefix="/api/v1")
 
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
@@ -313,6 +319,8 @@ async def google_callback(code: str = None, error: str = None):
         if not email:
             raise HTTPException(status_code=400, detail=f"Missing required email from Google. Available fields: {list(user_info.keys())}")
         
+        db_user = None
+
         # Create database session
         from app.core.database import AsyncSessionLocal
         async with AsyncSessionLocal() as db:
@@ -342,7 +350,12 @@ async def google_callback(code: str = None, error: str = None):
                 pass
         
         # Generate JWT token for our application
-        jwt_token = token_manager.create_dummy_token(email=email, name=name)
+        jwt_token = token_manager.create_dummy_token(
+            email=email,
+            name=name,
+            user_id=db_user.id if db_user else None,
+            is_super_user=bool(getattr(db_user, "is_super_user", False))
+        )
         
         # Redirect to frontend with token
         success_url = f"{settings.FRONTEND_URL}/#/auth/callback?token={jwt_token}"

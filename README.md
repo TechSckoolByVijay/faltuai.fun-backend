@@ -56,10 +56,16 @@ FaltooAI Backend is a modern, high-performance API built with FastAPI that power
 backend/
 ├── app/
 │   ├── api/                        # API route definitions
-│   │   ├── feature1/              # Feature 1 endpoints
-│   │   │   └── router.py          # Feature 1 API routes
-│   │   └── resume_roast/          # Resume roasting endpoints
-│   │       └── router.py          # Resume roast API routes
+│   │   ├── resume_roast/          # Resume roasting endpoints
+│   │   │   └── router.py          # Resume roast API routes
+│   │   ├── stock_analysis/        # Stock analysis endpoints
+│   │   │   └── router.py
+│   │   ├── newsletter/            # Newsletter endpoints
+│   │   │   └── router.py
+│   │   ├── skill_assessment/      # Skill assessment endpoints
+│   │   │   └── router.py
+│   │   └── v1/endpoints/          # Versioned endpoint modules
+│   │       └── cringe_meter.py    # LinkedIn cringe analyzer endpoint
 │   ├── auth/                      # Authentication modules
 │   │   ├── google_oauth.py        # Google OAuth integration
 │   │   └── tokens.py              # JWT token management
@@ -72,10 +78,12 @@ backend/
 │   │   └── resume_roast.py       # Resume roast model
 │   ├── schemas/                   # Pydantic schemas
 │   │   ├── user.py               # User data schemas
-│   │   └── resume.py             # Resume data schemas
+│   │   ├── resume.py             # Resume data schemas
+│   │   └── cringe.py             # Cringe analyzer request/response schemas
 │   ├── services/                  # Business logic services
 │   │   ├── document_processor.py  # Document processing service
 │   │   ├── resume_roasting_service.py # AI resume roasting
+│   │   ├── cringe_service.py      # Cringe analyzer LLM service
 │   │   └── database/             # Database services
 │   │       ├── user_service.py   # User database operations
 │   │       └── resume_roast_service.py # Resume roast DB ops
@@ -207,36 +215,12 @@ AZURE_DOC_INTELLIGENCE_KEY=your-key
 ## 🔧 Development Setup
 
 ### Prerequisites
-- Python 3.11+
-- PostgreSQL 15+
 - Docker & Docker Compose
 - Git for version control
 
-### Local Development
-```bash
-# Clone repository
-git clone https://github.com/TechSckoolByVijay/faltuai.fun.git
-cd faltuai.fun/backend
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup database
-alembic upgrade head
-
-# Run development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
 ### Docker Development
 ```bash
-# Build and run with Docker Compose
+# Build and run full stack (from repository root)
 docker compose up --build
 
 # Run specific services
@@ -244,6 +228,12 @@ docker compose up database backend
 
 # View logs
 docker compose logs -f backend
+```
+
+### Test `Cringe-o-Meter` Endpoint (Docker)
+```bash
+# From repository root (backend container must be running)
+docker compose exec backend curl -X POST "http://localhost:8000/api/v1/cringe/analyze" -H "Content-Type: application/json" -H "Authorization: Bearer <jwt_token>" -d '{"content":"Thrilled to announce I am humbled and honored to begin this transformational journey as a thought leader."}'
 ```
 
 ## 📊 API Documentation
@@ -258,6 +248,9 @@ docker compose logs -f backend
 # Authentication
 POST /auth/google/login     # Google OAuth login
 POST /auth/refresh          # Refresh JWT token
+
+# LinkedIn Cringe-o-Meter
+POST /api/v1/cringe/analyze # Analyze post and return structured cringe report
 POST /auth/logout           # User logout
 
 # Resume Roasting

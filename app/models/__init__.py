@@ -12,6 +12,7 @@ from .skill_assessment import (
     LearningPlan
 )
 from .stock_analysis import StockAnalysis, StockAnalysisCache
+from .email_smoothener import EmailSmoothenerSession
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "LearningPlan",
     "StockAnalysis",
     "StockAnalysisCache",
+    "EmailSmoothenerSession",
 ]
