@@ -29,6 +29,8 @@ from app.api.skill_assessment.router import router as skill_assessment_router
 from app.api.v1.endpoints.cringe_meter import router as cringe_meter_router
 from app.api.admin.router import router as admin_router
 from app.api.email_smoothener.router import router as email_smoothener_router
+from app.api.idea_spark.router import router as idea_spark_router
+from app.api.name_craft.router import router as name_craft_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
@@ -99,6 +101,8 @@ app.include_router(skill_assessment_router, prefix="/api/v1")
 app.include_router(cringe_meter_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(email_smoothener_router, prefix="/api/v1")
+app.include_router(idea_spark_router, prefix="/api/v1")
+app.include_router(name_craft_router, prefix="/api/v1")
 
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
