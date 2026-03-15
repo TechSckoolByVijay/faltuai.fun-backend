@@ -26,7 +26,7 @@ from app.auth.tokens import token_manager
 from app.api.resume_roast.router import router as resume_roast_router
 from app.api.newsletter.router import router as newsletter_router
 from app.api.skill_assessment.router import router as skill_assessment_router
-from app.api.v1.endpoints.cringe_meter import router as cringe_meter_router
+from app.api.cringe_meter.router import router as cringe_meter_router
 from app.api.admin.router import router as admin_router
 from app.api.email_smoothener.router import router as email_smoothener_router
 from app.api.idea_spark.router import router as idea_spark_router
