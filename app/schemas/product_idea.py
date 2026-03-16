@@ -14,7 +14,7 @@ class ProductIdeaCreate(BaseModel):
     feature_categories: List[str] = Field(default_factory=list)
     usage_frequency: Optional[str] = Field(None, max_length=80)
     example_references: Optional[str] = Field(None, max_length=2000)
-    contact_email: Optional[EmailStr] = None
+    contact_email: EmailStr
 
     source: str = Field(default="landing_page", max_length=80)
     is_contact_allowed: bool = False
