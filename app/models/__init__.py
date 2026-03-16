@@ -4,6 +4,7 @@ Database models for the FaltuAI application
 from .user import User
 from .resume_roast import ResumeRoastSession, UserActivityLog, SystemMetrics
 from .newsletter_subscription import NewsletterSubscription
+from .product_idea import ProductIdea
 from .skill_assessment import (
     SkillAssessment, 
     QuizQuestion, 
@@ -19,6 +20,7 @@ __all__ = [
     "UserActivityLog",
     "SystemMetrics",
     "NewsletterSubscription",
+    "ProductIdea",
     "SkillAssessment",
     "QuizQuestion",
     "QuizAnswer", 
