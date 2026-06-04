@@ -57,6 +57,16 @@ class Settings:
     SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")  # Serper.dev Google Search API
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")  # GitHub API personal access token (optional, higher rate limits)
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")  # YouTube Data API v3 key
+
+    # Lifestyle Newsletter (ln_) - BYOK ElevenLabs
+    # LN_ENCRYPTION_SECRET: 32-byte URL-safe base64 key used to encrypt user ElevenLabs API keys at rest.
+    # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    LN_ENCRYPTION_SECRET: str = os.getenv("LN_ENCRYPTION_SECRET", "")
+    ELEVENLABS_VOICE_ID: str = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # Rachel (default)
+    LN_CONTENT_LOOKBACK_DAYS: int = int(os.getenv("LN_CONTENT_LOOKBACK_DAYS", "7"))
+    LN_TOP_STORIES_COUNT: int = int(os.getenv("LN_TOP_STORIES_COUNT", "20"))
+    LN_SCHEDULER_ENABLED: bool = os.getenv("LN_SCHEDULER_ENABLED", "True").lower() == "true"
+    LN_WEEKLY_GENERATE_DAY: str = os.getenv("LN_WEEKLY_GENERATE_DAY", "monday")  # day of week
     
     # File Upload Configuration
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB

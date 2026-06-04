@@ -13,6 +13,7 @@ from .skill_assessment import (
     LearningPlan
 )
 from .email_smoothener import EmailSmoothenerSession
+from .lifestyle_newsletter import LnPodcastEpisode, LnSubscription
 
 __all__ = [
     "User",
@@ -27,4 +28,6 @@ __all__ = [
     "SkillEvaluationResult",
     "LearningPlan",
     "EmailSmoothenerSession",
+    "LnPodcastEpisode",
+    "LnSubscription",
 ]

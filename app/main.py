@@ -32,6 +32,7 @@ from app.api.email_smoothener.router import router as email_smoothener_router
 from app.api.idea_spark.router import router as idea_spark_router
 from app.api.name_craft.router import router as name_craft_router
 from app.api.product_ideas.router import router as product_ideas_router
+from app.api.lifestyle_newsletter.router import router as lifestyle_newsletter_router
 
 # Import database configuration
 from app.core.database import init_db, close_db, get_db
@@ -86,9 +87,22 @@ async def startup_event():
         # Don't fail startup if database is not available
         # This allows the app to run without database for testing
 
+    # Start Lifestyle Newsletter scheduler
+    try:
+        from app.services.lifestyle_newsletter.scheduler import start_scheduler
+        start_scheduler()
+        print("✅ Lifestyle Newsletter scheduler started")
+    except Exception as e:
+        print(f"⚠️  Lifestyle Newsletter scheduler failed to start: {e}")
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connections on shutdown"""
+    try:
+        from app.services.lifestyle_newsletter.scheduler import stop_scheduler
+        stop_scheduler()
+    except Exception as e:
+        print(f"⚠️  Lifestyle Newsletter scheduler shutdown error: {e}")
     try:
         await close_db()
         print("✅ Database connections closed")
@@ -105,6 +119,7 @@ app.include_router(email_smoothener_router, prefix="/api/v1")
 app.include_router(idea_spark_router, prefix="/api/v1")
 app.include_router(name_craft_router, prefix="/api/v1")
 app.include_router(product_ideas_router, prefix="/api/v1")
+app.include_router(lifestyle_newsletter_router, prefix="/api/v1")
 
 # Debug router (temporary for troubleshooting)
 if settings.APP_VERSION == "1.0.2":
