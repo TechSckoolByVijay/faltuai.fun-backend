@@ -27,6 +27,7 @@ from app.api.resume_roast.router import router as resume_roast_router
 from app.api.newsletter.router import router as newsletter_router
 from app.api.skill_assessment.router import router as skill_assessment_router
 from app.api.cringe_meter.router import router as cringe_meter_router
+from app.api.cockroach_killer.router import router as cockroach_killer_router
 from app.api.admin.router import router as admin_router
 from app.api.email_smoothener.router import router as email_smoothener_router
 from app.api.idea_spark.router import router as idea_spark_router
@@ -114,6 +115,7 @@ app.include_router(resume_roast_router, prefix="/api/v1")
 app.include_router(newsletter_router, prefix="/api/v1")
 app.include_router(skill_assessment_router, prefix="/api/v1")
 app.include_router(cringe_meter_router, prefix="/api/v1")
+app.include_router(cockroach_killer_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(email_smoothener_router, prefix="/api/v1")
 app.include_router(idea_spark_router, prefix="/api/v1")

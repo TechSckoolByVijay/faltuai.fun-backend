@@ -14,6 +14,7 @@ from .skill_assessment import (
 )
 from .email_smoothener import EmailSmoothenerSession
 from .lifestyle_newsletter import LnPodcastEpisode, LnSubscription
+from .cockroach_killer import CockroachKillRecord
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "EmailSmoothenerSession",
     "LnPodcastEpisode",
     "LnSubscription",
+    "CockroachKillRecord",
 ]
